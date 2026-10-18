@@ -1,19 +1,28 @@
 #!/usr/bin/env python3
-"""Discover candidate PNG legal materials from registered source websites.
+"""Discover and classify candidate PNG legal resources.
 
-This script identifies candidate URLs only. It does not establish
-authenticity, legal status, currency, or redistribution permission.
+Discovery does not establish authenticity, current legal status,
+legal effect, or permission to redistribute a resource.
 """
 
 import json
 import re
 import time
+import hashlib
 import xml.etree.ElementTree as ET
+
 from datetime import datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.error import HTTPError, URLError
-from urllib.parse import urljoin, urlparse, urldefrag
+from urllib.parse import (
+    urljoin,
+    urlparse,
+    urlunparse,
+    urldefrag,
+    parse_qsl,
+    urlencode,
+)
 from urllib.request import Request, urlopen
 
 try:
@@ -23,6 +32,7 @@ except ImportError:
         "Missing dependency PyYAML. Install it with: pip install PyYAML"
     )
 
+
 ROOT = Path(__file__).resolve().parents[1]
 REGISTRY = ROOT / "sources" / "discovery-sources.yml"
 REPORT = ROOT / "reports" / "discovered-source-candidates.json"
@@ -30,39 +40,117 @@ REPORT = ROOT / "reports" / "discovered-source-candidates.json"
 TIMEOUT = 15
 MAX_BYTES = 2_000_000
 MAX_URLS_PER_SOURCE = 300
-USER_AGENT = "PNG-Legal-Library-Discovery/1.0"
+MAX_METADATA_CHECKS_PER_SOURCE = 100
+USER_AGENT = "PNG-Legal-Library-Discovery/2.0"
+
+TRACKING_PARAMETERS = {
+    "fbclid",
+    "gclid",
+    "mc_cid",
+    "mc_eid",
+}
 
 LEGAL_TERMS = re.compile(
-    r"constitution|act\b|legislation|law\b|bill\b|regulation|"
-    r"statute|judgment|judgement|court|legal|gazette|"
-    r"organic[- ]law|rules of court|case law|"
-    r"justice|ordinance|amendment|legal notice|"
-    r"practice direction|public notice|"
-    r"legislative|parliamentary",
+    r"constitution|legislation|legislative|statute|"
+    r"\bact\b|\bbill\b|\blaw\b|regulation|ordinance|"
+    r"judgment|judgement|court|legal|gazette|"
+    r"organic[-_ ]law|case[-_ ]law|justice|amendment|"
+    r"practice[-_ ]direction|public[-_ ]notice|"
+    r"parliament|policy|policies|report|reports|"
+    r"village[-_ ]court|juvenile[-_ ]justice|"
+    r"legal[-_ ]aid|law[-_ ]reform|court[-_ ]rule|"
+    r"forms|decisions|rulings|commission",
     re.IGNORECASE,
 )
 
 DOCUMENT_EXTENSIONS = (
-    ".pdf", ".doc", ".docx", ".rtf", ".html", ".htm"
+    ".pdf", ".doc", ".docx", ".rtf", ".odt",
+    ".html", ".htm", ".txt",
 )
 
 
-class LinkParser(HTMLParser):
+class PageParser(HTMLParser):
+    """Extract basic page metadata without executing scripts."""
+
+    def __init__(self):
+        super().__init__()
+        self.title_parts = []
+        self.h1_parts = []
+        self.current_title = False
+        self.current_h1 = False
+        self.meta = {}
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        tag = tag.lower()
+
+        if tag == "title":
+            self.current_title = True
+
+        elif tag == "h1":
+            self.current_h1 = True
+
+        elif tag == "meta":
+            key = (
+                attrs.get("property")
+                or attrs.get("name")
+                or attrs.get("itemprop")
+                or ""
+            ).strip().lower()
+
+            value = (
+                attrs.get("content")
+                or attrs.get("datetime")
+                or ""
+            ).strip()
+
+            if key and value:
+                self.meta[key] = value
+
+    def handle_endtag(self, tag):
+        tag = tag.lower()
+
+        if tag == "title":
+            self.current_title = False
+
+        elif tag == "h1":
+            self.current_h1 = False
+
+    def handle_data(self, data):
+        value = data.strip()
+
+        if not value:
+            return
+
+        if self.current_title:
+            self.title_parts.append(value)
+
+        if self.current_h1:
+            self.h1_parts.append(value)
+
+
+class LinkParser(PageParser):
+    """Also collect links from the page."""
+
     def __init__(self):
         super().__init__()
         self.links = []
 
     def handle_starttag(self, tag, attrs):
-        if tag.lower() != "a":
-            return
+        attrs_dict = dict(attrs)
 
-        for key, value in attrs:
-            if key.lower() == "href" and value:
-                self.links.append(value.strip())
+        if tag.lower() == "a":
+            href = attrs_dict.get("href")
+
+            if href:
+                self.links.append(href.strip())
+
+        super().handle_starttag(tag, attrs)
 
 
 def fetch(url):
-    """Fetch a small public text response; never execute page scripts."""
+    """Fetch a public resource without bypassing access controls."""
+
     request = Request(
         url,
         headers={"User-Agent": USER_AGENT},
@@ -70,7 +158,6 @@ def fetch(url):
 
     try:
         with urlopen(request, timeout=TIMEOUT) as response:
-            content_type = response.headers.get("Content-Type", "")
             body = response.read(MAX_BYTES + 1)
 
             if len(body) > MAX_BYTES:
@@ -80,7 +167,9 @@ def fetch(url):
                 "ok": True,
                 "status": response.getcode(),
                 "final_url": response.geturl(),
-                "content_type": content_type,
+                "content_type": response.headers.get(
+                    "Content-Type", ""
+                ),
                 "body": body,
             }
 
@@ -90,6 +179,7 @@ def fetch(url):
             "status": exc.code,
             "error": str(exc.reason),
         }
+
     except (URLError, TimeoutError, OSError) as exc:
         return {
             "ok": False,
@@ -99,35 +189,182 @@ def fetch(url):
 
 
 def normalize_url(base, candidate):
+    """Normalize URL fragments and common tracking parameters."""
+
     candidate = urljoin(base, candidate)
-    candidate, _fragment = urldefrag(candidate)
+    candidate, _ = urldefrag(candidate)
     parsed = urlparse(candidate)
 
     if parsed.scheme not in ("http", "https"):
         return None
 
-    if not parsed.netloc:
+    if not parsed.hostname or parsed.username or parsed.password:
         return None
 
-    if parsed.username or parsed.password:
-        return None
+    hostname = parsed.hostname.lower()
 
-    return candidate
+    if parsed.port:
+        netloc = f"{hostname}:{parsed.port}"
+    else:
+        netloc = hostname
+
+    query_items = []
+
+    for key, value in parse_qsl(
+        parsed.query, keep_blank_values=True
+    ):
+        lowered = key.lower()
+
+        if lowered.startswith("utm_"):
+            continue
+
+        if lowered in TRACKING_PARAMETERS:
+            continue
+
+        query_items.append((key, value))
+
+    query_items.sort()
+
+    path = parsed.path or "/"
+
+    # Treat a trailing slash as optional, except for the root page.
+    if path != "/":
+        path = path.rstrip("/")
+
+    return urlunparse((
+        parsed.scheme.lower(),
+        netloc,
+        path,
+        "",
+        urlencode(query_items),
+        "",
+    ))
 
 
 def same_host(url, host):
     return urlparse(url).hostname == host
 
 
-def looks_relevant(url):
-    parsed = urlparse(url)
-    text = f"{parsed.path} {parsed.query}".replace("_", " ").replace("-", " ")
-    return bool(LEGAL_TERMS.search(text))
-
-
 def is_document_url(url):
-    path = urlparse(url).path.lower()
-    return path.endswith(DOCUMENT_EXTENSIONS)
+    return urlparse(url).path.lower().endswith(
+        DOCUMENT_EXTENSIONS
+    )
+
+
+def classify_candidate(url, title=""):
+    """Suggest a category based on URL and available title only."""
+
+    text = (
+        urlparse(url).path + " " + title
+    ).replace("_", " ").replace("-", " ").lower()
+
+    categories = [
+        ("constitution", r"\bconstitution\b"),
+        ("legislation", r"\blegislation\b|\bstatute\b|\bacts?\b"),
+        ("bills", r"\bbills?\b"),
+        ("organic_laws", r"\borganic laws?\b"),
+        ("regulations", r"\bregulations?\b"),
+        ("court_judgments", r"\bjudg(?:ment|ement)s?\b|\brulings?\b"),
+        ("court_rules", r"\bcourt rules?\b|\bpractice directions?\b"),
+        ("legal_forms", r"\bforms?\b"),
+        ("official_notices", r"\bgazette\b|\blegal notices?\b|\bpublic notices?\b"),
+        ("court_information", r"\bcourt\b|\bcourts\b|\bcourt diary\b"),
+        ("legal_policy", r"\bpolic(?:y|ies)\b"),
+        ("official_reports", r"\breports?\b"),
+        ("legal_research", r"\bresearch\b|\blaw journal\b|\bcase law\b"),
+        ("legal_services", r"\blegal aid\b|\blegal services\b"),
+        ("justice_programmes", r"\bjustice\b|\bvillage courts?\b|\bjuvenile justice\b"),
+        ("parliamentary_records", r"\bparliament\b|\bparliamentary\b"),
+    ]
+
+    for category, pattern in categories:
+        if re.search(pattern, text):
+            return category
+
+    if is_document_url(url):
+        return "document_unclassified"
+
+    return "legal_related_page_unclassified"
+
+
+def extract_date(parser):
+    """Return an available publication or modification date."""
+
+    preferred_keys = (
+        "article:published_time",
+        "datepublished",
+        "date",
+        "dc.date",
+        "dcterms.date",
+        "article:modified_time",
+        "datemodified",
+        "last-modified",
+    )
+
+    for key in preferred_keys:
+        value = parser.meta.get(key)
+
+        if value:
+            return value[:100]
+
+    return None
+
+
+def inspect_page(url):
+    """Check accessibility and extract basic metadata for HTML pages."""
+
+    result = fetch(url)
+
+    metadata = {
+        "http_status": result.get("status"),
+        "access_result": "unreachable",
+        "title": None,
+        "available_date": None,
+        "final_url": None,
+        "error": result.get("error"),
+    }
+
+    if not result["ok"]:
+        status = result.get("status")
+
+        if status == 403:
+            metadata["access_result"] = "forbidden"
+        elif status == 404:
+            metadata["access_result"] = "not_found"
+        elif status == 429:
+            metadata["access_result"] = "rate_limited"
+        elif status is not None:
+            metadata["access_result"] = "http_error"
+        else:
+            metadata["access_result"] = "network_error"
+
+        return metadata
+
+    metadata["final_url"] = result.get("final_url")
+    metadata["error"] = None
+
+    content_type = result.get("content_type", "").lower()
+
+    if "html" not in content_type:
+        metadata["access_result"] = "accessible_non_html"
+        return metadata
+
+    parser = PageParser()
+
+    parser.feed(
+        result["body"].decode("utf-8", errors="replace")
+    )
+
+    title = " ".join(parser.title_parts).strip()
+
+    if not title:
+        title = " ".join(parser.h1_parts).strip()
+
+    metadata["title"] = title[:300] if title else None
+    metadata["available_date"] = extract_date(parser)
+    metadata["access_result"] = "accessible_html"
+
+    return metadata
 
 
 def parse_sitemap(data):
@@ -147,69 +384,86 @@ def parse_sitemap(data):
 
 
 def get_sitemap_urls(base_url, host):
-    """Read sitemap locations advertised by robots.txt, then common paths."""
-    candidates = [
-        urljoin(base_url.rstrip("/") + "/", "robots.txt"),
-        urljoin(base_url.rstrip("/") + "/", "sitemap.xml"),
-        urljoin(base_url.rstrip("/") + "/", "sitemap_index.xml"),
+    """Find sitemap locations without crawling external hosts."""
+
+    root = base_url.rstrip("/") + "/"
+
+    robots_url = urljoin(root, "robots.txt")
+    common_sitemaps = [
+        urljoin(root, "sitemap.xml"),
+        urljoin(root, "sitemap_index.xml"),
     ]
 
     sitemap_urls = []
 
-    robots = fetch(candidates[0])
+    robots = fetch(robots_url)
+
     if robots["ok"]:
-        text = robots["body"].decode("utf-8", errors="replace")
+        text = robots["body"].decode(
+            "utf-8", errors="replace"
+        )
 
         for line in text.splitlines():
             if line.lower().startswith("sitemap:"):
-                sitemap_urls.append(line.split(":", 1)[1].strip())
+                sitemap = line.split(":", 1)[1].strip()
 
-    sitemap_urls.extend(candidates[1:])
+                if urlparse(sitemap).hostname == host:
+                    sitemap_urls.append(sitemap)
 
-    # Keep only sitemap URLs on the registered host.
-    return list(dict.fromkeys(
-        url for url in sitemap_urls
-        if urlparse(url).hostname == host
-    ))
+    sitemap_urls.extend(common_sitemaps)
+
+    return list(dict.fromkeys(sitemap_urls))
 
 
-def inspect_sitemap(sitemap_url, host, found, visited_sitemaps):
+def inspect_sitemap(
+    sitemap_url, host, found, visited_sitemaps
+):
     if sitemap_url in visited_sitemaps:
         return
 
     visited_sitemaps.add(sitemap_url)
 
     result = fetch(sitemap_url)
+
     if not result["ok"]:
         return
 
-    if "xml" not in result.get("content_type", "").lower():
-        # Some servers omit the XML content type; parse the response anyway.
-        pass
-
-    for url in parse_sitemap(result["body"]):
-        normalized = normalize_url(sitemap_url, url)
+    for item in parse_sitemap(result["body"]):
+        normalized = normalize_url(sitemap_url, item)
 
         if not normalized or not same_host(normalized, host):
             continue
 
+        # Limit sitemap recursion to avoid accidental sitemap loops.
         if normalized.lower().endswith(".xml"):
-            inspect_sitemap(
-                normalized, host, found, visited_sitemaps
-            )
+            if len(visited_sitemaps) < 20:
+                inspect_sitemap(
+                    normalized,
+                    host,
+                    found,
+                    visited_sitemaps,
+                )
             continue
 
-        if looks_relevant(normalized) or is_document_url(normalized):
+        if LEGAL_TERMS.search(normalized) or is_document_url(normalized):
             found.setdefault(normalized, "sitemap")
+
+        if len(found) >= MAX_URLS_PER_SOURCE:
+            return
 
 
 def inspect_homepage_links(base_url, host, found):
     result = fetch(base_url)
 
     if not result["ok"]:
+        status = result.get("status")
+
         return {
-            "result": "unreachable",
-            "http_status": result.get("status"),
+            "result": (
+                "forbidden" if status == 403
+                else "unreachable"
+            ),
+            "http_status": status,
             "error": result.get("error"),
         }
 
@@ -222,20 +476,29 @@ def inspect_homepage_links(base_url, host, found):
         }
 
     parser = LinkParser()
-    parser.feed(result["body"].decode("utf-8", errors="replace"))
+
+    parser.feed(
+        result["body"].decode("utf-8", errors="replace")
+    )
 
     for href in parser.links:
-        normalized = normalize_url(result["final_url"], href)
+        normalized = normalize_url(
+            result["final_url"], href
+        )
 
         if not normalized or not same_host(normalized, host):
             continue
 
-        if looks_relevant(normalized) or is_document_url(normalized):
+        if LEGAL_TERMS.search(normalized) or is_document_url(normalized):
             found.setdefault(normalized, "homepage_link")
+
+        if len(found) >= MAX_URLS_PER_SOURCE:
+            break
 
     return {
         "result": "checked",
         "http_status": result.get("status"),
+        "links_examined": len(parser.links),
     }
 
 
@@ -253,10 +516,15 @@ def discover_source(source):
         "discovery_status": "started",
         "homepage_check": None,
         "sitemaps_checked": 0,
+        "duplicate_urls_removed": 0,
+        "metadata_checks_performed": 0,
+        "metadata_checks_skipped": 0,
         "candidates": [],
         "notes": [
-            "Candidate discovery only; legal status has not been verified.",
-            "Source terms and redistribution permissions require human review.",
+            "Candidate discovery only; legal status is not verified.",
+            "Category labels are automated suggestions, not legal conclusions.",
+            "Redistribution permission requires human review.",
+            "A reachable page is not proof that its content is current.",
         ],
     }
 
@@ -265,6 +533,7 @@ def discover_source(source):
         return output
 
     found = {}
+
     output["homepage_check"] = inspect_homepage_links(
         base_url, host, found
     )
@@ -274,27 +543,64 @@ def discover_source(source):
 
     for sitemap_url in sitemap_urls:
         inspect_sitemap(
-            sitemap_url, host, found, visited_sitemaps
+            sitemap_url,
+            host,
+            found,
+            visited_sitemaps,
         )
         time.sleep(0.2)
 
     output["sitemaps_checked"] = len(visited_sitemaps)
 
-    candidates = sorted(found.items())[:MAX_URLS_PER_SOURCE]
+    unique_candidates = sorted(found.items())[
+        :MAX_URLS_PER_SOURCE
+    ]
 
-    for url, discovery_method in candidates:
-        output["candidates"].append({
-            "url": url,
+    output["duplicate_urls_removed"] = max(
+        0, len(found) - len(unique_candidates)
+    )
+
+    for index, (url, discovery_method) in enumerate(
+        unique_candidates
+    ):
+        metadata = {
+            "http_status": None,
+            "access_result": "not_checked",
             "title": None,
+            "available_date": None,
+            "final_url": None,
+            "error": None,
+        }
+
+        if index < MAX_METADATA_CHECKS_PER_SOURCE:
+            metadata = inspect_page(url)
+            output["metadata_checks_performed"] += 1
+            time.sleep(0.2)
+        else:
+            output["metadata_checks_skipped"] += 1
+
+        title = metadata.get("title")
+
+        candidate = {
+            "candidate_id": hashlib.sha256(
+                url.encode("utf-8")
+            ).hexdigest()[:16],
+            "url": url,
+            "final_url": metadata.get("final_url"),
+            "title": title,
+            "available_date": metadata.get("available_date"),
             "discovery_method": discovery_method,
-            "candidate_type": (
-                "document_link" if is_document_url(url)
-                else "webpage"
-            ),
+            "candidate_type": classify_candidate(url, title or ""),
+            "technical_access": metadata.get("access_result"),
+            "http_status": metadata.get("http_status"),
+            "access_error": metadata.get("error"),
             "review_status": "pending_review",
             "legal_status": "status_unknown",
+            "legal_status_evidence": None,
             "redistribution_permission": "unknown",
-        })
+        }
+
+        output["candidates"].append(candidate)
 
     output["discovery_status"] = "completed"
     output["candidate_count"] = len(output["candidates"])
@@ -313,15 +619,21 @@ def main():
             REGISTRY.read_text(encoding="utf-8")
         )
     except (OSError, yaml.YAMLError) as exc:
-        raise SystemExit(f"ERROR reading source registry: {exc}")
+        raise SystemExit(
+            f"ERROR reading source registry: {exc}"
+        )
 
     if not isinstance(registry, dict):
-        raise SystemExit("ERROR: source registry must be a YAML mapping.")
+        raise SystemExit(
+            "ERROR: source registry must be a YAML mapping."
+        )
 
     sources = registry.get("sources", [])
 
     if not isinstance(sources, list):
-        raise SystemExit("ERROR: registry 'sources' must be a list.")
+        raise SystemExit(
+            "ERROR: registry 'sources' must be a list."
+        )
 
     results = []
 
@@ -340,25 +652,35 @@ def main():
 
         time.sleep(0.5)
 
-    REPORT.parent.mkdir(parents=True, exist_ok=True)
+    # Deduplicate URLs across sources in the summary.
+    all_urls = [
+        candidate["url"]
+        for result in results
+        for candidate in result.get("candidates", [])
+    ]
 
     report = {
-        "report_version": 1,
+        "report_version": 2,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "purpose": (
-            "Candidate discovery only. "
+            "Candidate discovery and metadata extraction only. "
             "No legal status or redistribution rights are established."
         ),
         "summary": {
             "sources_processed": len(results),
-            "candidates_found": sum(
-                len(item.get("candidates", []))
-                for item in results
+            "candidates_found": len(all_urls),
+            "unique_urls_across_sources": len(set(all_urls)),
+            "duplicate_urls_across_sources": (
+                len(all_urls) - len(set(all_urls))
             ),
             "human_review_required": True,
+            "automatic_legal_status_changes": False,
+            "automatic_redistribution_approval": False,
         },
         "sources": results,
     }
+
+    REPORT.parent.mkdir(parents=True, exist_ok=True)
 
     REPORT.write_text(
         json.dumps(report, indent=2, ensure_ascii=False) + "\n",
@@ -366,7 +688,7 @@ def main():
     )
 
     print(f"\nReport saved to: {REPORT.relative_to(ROOT)}")
-    print("Review candidate URLs before adding any document to the library.")
+    print("Review all candidate records before adding materials to the library.")
 
 
 if __name__ == "__main__":
