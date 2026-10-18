@@ -1,0 +1,81 @@
+registry_version: 1
+
+purpose: >
+  Registry of approved candidate sources for discovering Papua New Guinea
+  legal materials. Inclusion does not establish that every document from
+  a source is authentic, current, legally effective, or available for
+  redistribution.
+
+discovery_rules:
+  automatic_discovery: true
+  automatic_legal_status_changes: false
+  automatic_redistribution_approval: false
+  require_human_review_before_verification: true
+  retain_source_url: true
+  record_discovery_date: true
+  store_personal_case_information: false
+
+sources:
+  - source_id: png_parliament
+    name: Parliament of Papua New Guinea
+    url: https://parliament.gov.pg/
+    source_type: official_government
+    discovery_scope:
+      - bills
+      - legislation
+      - parliamentary_records
+    review_status: candidate
+    redistribution_permission: unknown
+
+  - source_id: png_judiciary
+    name: Papua New Guinea Judiciary
+    url: https://www.pngjudiciary.gov.pg/
+    source_type: official_judicial
+    discovery_scope:
+      - court_judgments
+      - court_rules
+      - judicial_notices
+    review_status: needs_verification
+    redistribution_permission: unknown
+
+  - source_id: paclii
+    name: Pacific Islands Legal Information Institute
+    url: https://www.paclii.org/
+    source_type: legal_information_service
+    discovery_scope:
+      - legislation
+      - court_judgments
+      - legal_research
+    review_status: needs_verification
+    redistribution_permission: unknown
+
+  - source_id: png_djag
+    name: Department of Justice and Attorney General
+    url: https://justice.gov.pg/
+    source_type: official_government
+    discovery_scope:
+      - legislation
+      - justice_policy
+      - legal_information
+    review_status: candidate
+    redistribution_permission: unknown
+
+  - source_id: png_ombudsman
+    name: Ombudsman Commission of Papua New Guinea
+    url: https://www.ombudsman.gov.pg/
+    source_type: independent_constitutional_institution
+    discovery_scope:
+      - constitution
+      - organic_laws
+      - legislation
+      - official_reports
+    review_status: candidate
+    redistribution_permission: unknown
+
+future_source_policy:
+  - Consider additional official national government agencies.
+  - Consider provincial and local-level government sources where relevant.
+  - Verify each source's identity, purpose, coverage, and terms.
+  - Do not assume a government webpage contains the latest legal version.
+  - Do not automatically mark discovered materials as current law.
+  - Record links to documents when copying or redistribution is not permitted.
