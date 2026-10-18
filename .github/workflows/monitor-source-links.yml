@@ -1,0 +1,42 @@
+name: Monitor legal source links
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Weekly, Monday 19:17 UTC (Tuesday morning in Papua New Guinea).
+    - cron: "17 19 * * 1"
+  push:
+    branches: [main]
+    paths:
+      - "data/documents.json"
+      - "scripts/check_source_links.py"
+      - ".github/workflows/monitor-source-links.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  check-source-links:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check registered source URLs
+        run: python scripts/check_source_links.py
+
+      - name: Upload link-check report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-link-check-report
+          path: reports/source-link-check-report.json
+          if-no-files-found: warn
+          retention-days: 30
