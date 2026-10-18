@@ -1,4 +1,4 @@
-name: Validate Legal Document Register
+name: Validate PNG Legal Library
 
 on:
   push:
@@ -6,7 +6,9 @@ on:
       - main
     paths:
       - 'data/documents.json'
+      - 'data/legal-resources.json'
       - 'schemas/document.schema.json'
+      - 'schemas/legal-resources.schema.json'
       - 'scripts/validate_documents.py'
       - '.github/workflows/validate-documents.yml'
 
@@ -15,7 +17,9 @@ on:
       - main
     paths:
       - 'data/documents.json'
+      - 'data/legal-resources.json'
       - 'schemas/document.schema.json'
+      - 'schemas/legal-resources.schema.json'
       - 'scripts/validate_documents.py'
       - '.github/workflows/validate-documents.yml'
 
@@ -26,7 +30,7 @@ permissions:
 
 jobs:
   validate:
-    name: Check Document Metadata
+    name: Validate Legal Catalogues
     runs-on: ubuntu-latest
 
     steps:
@@ -41,5 +45,5 @@ jobs:
       - name: Install validation dependency
         run: python -m pip install "jsonschema>=4.20,<5"
 
-      - name: Validate document register
+      - name: Validate document register and resources catalogue
         run: python scripts/validate_documents.py
