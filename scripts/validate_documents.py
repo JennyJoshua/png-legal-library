@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate PNG Legal Library document records."""
+"""Validate PNG Legal Library registers and metadata."""
 
 import json
 import re
@@ -10,10 +10,15 @@ from pathlib import Path
 from jsonschema import Draft202012Validator, FormatChecker
 
 ROOT = Path(__file__).resolve().parent.parent
-REGISTER = ROOT / "data" / "documents.json"
-SCHEMA = ROOT / "schemas" / "document.schema.json"
+
+DOCUMENT_REGISTER = ROOT / "data" / "documents.json"
+DOCUMENT_SCHEMA = ROOT / "schemas" / "document.schema.json"
+
+RESOURCE_REGISTER = ROOT / "data" / "legal-resources.json"
+RESOURCE_SCHEMA = ROOT / "schemas" / "legal-resources.schema.json"
 
 ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
+RESOURCE_ID_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
 
 def load_json(path):
@@ -22,7 +27,9 @@ def load_json(path):
         with path.open("r", encoding="utf-8") as file:
             return json.load(file)
     except FileNotFoundError:
-        raise ValueError(f"Required file not found: {path.relative_to(ROOT)}")
+        raise ValueError(
+            f"Required file not found: {path.relative_to(ROOT)}"
+        )
     except json.JSONDecodeError as exc:
         raise ValueError(
             f"Invalid JSON in {path.relative_to(ROOT)}: "
@@ -42,25 +49,40 @@ def valid_date(value):
         return False
 
 
-def main():
+def validate_schema(data, schema, label):
+    """Return readable JSON Schema validation errors."""
     errors = []
 
-    try:
-        register = load_json(REGISTER)
-        schema = load_json(SCHEMA)
-    except ValueError as exc:
-        print(f"ERROR: {exc}")
-        return 1
+    validator = Draft202012Validator(
+        schema,
+        format_checker=FormatChecker(),
+    )
+
+    for error in sorted(
+        validator.iter_errors(data),
+        key=lambda item: list(map(str, item.absolute_path)),
+    ):
+        field = ".".join(str(part) for part in error.absolute_path)
+        location = f"{label}.{field}" if field else label
+        errors.append(f"{location}: {error.message}")
+
+    return errors
+
+
+def validate_document_register(register, schema):
+    """Validate the existing legal document register."""
+    errors = []
 
     if not isinstance(register, dict):
-        print("ERROR: The register root must be a JSON object.")
-        return 1
+        return ["Document register root must be a JSON object."]
 
     if register.get("schema_version") != 1:
-        errors.append("Register schema_version must be 1.")
+        errors.append("Document register schema_version must be 1.")
 
     if register.get("jurisdiction") != "Papua New Guinea":
-        errors.append("Register jurisdiction must be Papua New Guinea.")
+        errors.append(
+            "Document register jurisdiction must be Papua New Guinea."
+        )
 
     documents = register.get("documents")
 
@@ -68,10 +90,12 @@ def main():
         errors.append("'documents' must be a JSON array.")
         documents = []
 
-    # Check each document against the formal JSON Schema.
-    validator = Draft202012Validator(
-        schema,
-        format_checker=FormatChecker(),
+    errors.extend(
+        validate_schema(
+            register,
+            schema,
+            "document_register",
+        )
     )
 
     seen_ids = set()
@@ -83,19 +107,13 @@ def main():
             errors.append(f"{label} must be a JSON object.")
             continue
 
-        for error in sorted(
-            validator.iter_errors(document),
-            key=lambda item: list(map(str, item.absolute_path)),
-        ):
-            field = ".".join(str(part) for part in error.absolute_path)
-            location = f"{label}.{field}" if field else label
-            errors.append(f"{location}: {error.message}")
-
         document_id = document.get("document_id")
 
         if isinstance(document_id, str):
             if not ID_PATTERN.fullmatch(document_id):
-                errors.append(f"{label}: invalid document_id format.")
+                errors.append(
+                    f"{label}: invalid document_id format."
+                )
 
             if document_id in seen_ids:
                 errors.append(
@@ -104,8 +122,6 @@ def main():
             else:
                 seen_ids.add(document_id)
 
-        # A document cannot claim verified current law without
-        # the record itself being marked verified.
         if (
             document.get("verification_status") != "verified"
             and document.get("legal_status") == "in_force"
@@ -115,7 +131,6 @@ def main():
                 "verification_status is not 'verified'."
             )
 
-        # A verified record should have a verification date and evidence.
         if document.get("verification_status") == "verified":
             if not valid_date(document.get("last_verified_date")):
                 errors.append(
@@ -124,27 +139,154 @@ def main():
                 )
 
             evidence = document.get("legal_status_evidence")
+
             if not isinstance(evidence, str) or not evidence.strip():
                 errors.append(
-                    f"{label}: verified records need legal_status_evidence."
+                    f"{label}: verified records need "
+                    "legal_status_evidence."
                 )
 
+    return errors, len(documents)
+
+
+def validate_resource_register(register, schema):
+    """Validate the legal forms and resources catalogue."""
+    errors = []
+
+    if not isinstance(register, dict):
+        return ["Legal resources catalogue root must be a JSON object."], 0
+
+    errors.extend(
+        validate_schema(
+            register,
+            schema,
+            "legal_resources",
+        )
+    )
+
+    if register.get("jurisdiction") != "Papua New Guinea":
+        errors.append(
+            "Legal resources catalogue jurisdiction must be "
+            "Papua New Guinea."
+        )
+
+    resources = register.get("resources")
+
+    if not isinstance(resources, list):
+        errors.append("'resources' must be a JSON array.")
+        resources = []
+
+    declared_types = register.get("resource_types", [])
+    if not isinstance(declared_types, list):
+        declared_types = []
+
+    seen_ids = set()
+
+    for index, resource in enumerate(resources):
+        label = f"resources[{index}]"
+
+        if not isinstance(resource, dict):
+            errors.append(f"{label} must be a JSON object.")
+            continue
+
+        resource_id = resource.get("resource_id")
+
+        if isinstance(resource_id, str):
+            if not RESOURCE_ID_PATTERN.fullmatch(resource_id):
+                errors.append(
+                    f"{label}: resource_id must use lowercase letters, "
+                    "numbers, and single hyphens between parts."
+                )
+
+            if resource_id in seen_ids:
+                errors.append(
+                    f"{label}: duplicate resource_id '{resource_id}'."
+                )
+            else:
+                seen_ids.add(resource_id)
+
+        resource_type = resource.get("resource_type")
+
+        if (
+            isinstance(resource_type, str)
+            and resource_type not in declared_types
+        ):
+            errors.append(
+                f"{label}: resource_type is not listed in "
+                "the catalogue's resource_types."
+            )
+
+        if (
+            resource.get("verification_status") != "verified"
+            and resource.get("legal_status") == "in_force"
+        ):
+            errors.append(
+                f"{label}: legal_status is 'in_force', but "
+                "verification_status is not 'verified'."
+            )
+
+        if resource.get("verification_status") == "verified":
+            if not valid_date(resource.get("last_checked")):
+                errors.append(
+                    f"{label}: verified resources need a valid "
+                    "last_checked date."
+                )
+
+            source_url = resource.get("source_url")
+
+            if not isinstance(source_url, str) or not source_url.strip():
+                errors.append(
+                    f"{label}: verified resources need a source_url."
+                )
+
+    return errors, len(resources)
+
+
+def main():
+    try:
+        document_register = load_json(DOCUMENT_REGISTER)
+        document_schema = load_json(DOCUMENT_SCHEMA)
+        resource_register = load_json(RESOURCE_REGISTER)
+        resource_schema = load_json(RESOURCE_SCHEMA)
+    except ValueError as exc:
+        print(f"ERROR: {exc}")
+        return 1
+
+    document_result = validate_document_register(
+        document_register,
+        document_schema,
+    )
+
+    # The document validator returns errors and count for valid root objects.
+    if isinstance(document_result, tuple):
+        document_errors, document_count = document_result
+    else:
+        document_errors = document_result
+        document_count = 0
+
+    resource_errors, resource_count = validate_resource_register(
+        resource_register,
+        resource_schema,
+    )
+
+    errors = document_errors + resource_errors
+
     if errors:
-        print("DOCUMENT REGISTER VALIDATION FAILED")
+        print("LEGAL LIBRARY VALIDATION FAILED")
         for error in errors:
             print(f"- {error}")
         return 1
 
-    print(
-        f"DOCUMENT REGISTER VALIDATION PASSED: "
-        f"{len(documents)} record(s)."
-    )
+    print("LEGAL LIBRARY VALIDATION PASSED")
+    print(f"Document register: {document_count} record(s).")
+    print(f"Legal resources catalogue: {resource_count} resource(s).")
     print("JSON Schema validation passed.")
     print("Metadata consistency checks passed.")
     print(
         "Reminder: automated validation does not establish "
-        "legal authenticity or current legal status."
+        "legal authenticity, current legal status, or redistribution rights."
     )
+
     return 0
 
 
