@@ -5,10 +5,10 @@ Discovery does not establish authenticity, current legal status,
 legal effect, or permission to redistribute a resource.
 """
 
+import hashlib
 import json
 import re
 import time
-import hashlib
 import xml.etree.ElementTree as ET
 
 from datetime import datetime, timezone
@@ -16,12 +16,13 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import (
+    quote,
+    urlencode,
     urljoin,
     urlparse,
     urlunparse,
     urldefrag,
     parse_qsl,
-    urlencode,
 )
 from urllib.request import Request, urlopen
 
@@ -41,7 +42,7 @@ TIMEOUT = 15
 MAX_BYTES = 2_000_000
 MAX_URLS_PER_SOURCE = 300
 MAX_METADATA_CHECKS_PER_SOURCE = 100
-USER_AGENT = "PNG-Legal-Library-Discovery/2.0"
+USER_AGENT = "PNG-Legal-Library-Discovery/2.1"
 
 TRACKING_PARAMETERS = {
     "fbclid",
@@ -86,10 +87,8 @@ class PageParser(HTMLParser):
 
         if tag == "title":
             self.current_title = True
-
         elif tag == "h1":
             self.current_h1 = True
-
         elif tag == "meta":
             key = (
                 attrs.get("property")
@@ -112,7 +111,6 @@ class PageParser(HTMLParser):
 
         if tag == "title":
             self.current_title = False
-
         elif tag == "h1":
             self.current_h1 = False
 
@@ -141,121 +139,132 @@ class LinkParser(PageParser):
 
         if tag.lower() == "a":
             href = attrs_dict.get("href")
-
             if href:
                 self.links.append(href.strip())
 
         super().handle_starttag(tag, attrs)
 
 
-def fetch(url):
-    """Fetch a public resource without bypassing access controls."""
+def safe_urljoin(base, candidate):
+    """Resolve a link safely, returning None for malformed URLs."""
 
-    request = Request(
-        url,
-        headers={"User-Agent": USER_AGENT},
-    )
+    if not isinstance(candidate, str):
+        return None
+
+    candidate = candidate.strip()
+
+    if not candidate:
+        return None
 
     try:
-        with urlopen(request, timeout=TIMEOUT) as response:
-            body = response.read(MAX_BYTES + 1)
+        # Quote spaces and unsafe URL characters while preserving
+        # existing URL separators and already encoded characters.
+        candidate = quote(
+            candidate,
+            safe=":/?#[]@!$&'()*+,;=%",
+        )
 
-            if len(body) > MAX_BYTES:
-                body = body[:MAX_BYTES]
+        joined = urljoin(base, candidate)
+        joined, _ = urldefrag(joined)
+        parsed = urlparse(joined)
 
-            return {
-                "ok": True,
-                "status": response.getcode(),
-                "final_url": response.geturl(),
-                "content_type": response.headers.get(
-                    "Content-Type", ""
-                ),
-                "body": body,
-            }
+        if parsed.scheme.lower() not in ("http", "https"):
+            return None
 
-    except HTTPError as exc:
-        return {
-            "ok": False,
-            "status": exc.code,
-            "error": str(exc.reason),
-        }
+        if not parsed.hostname:
+            return None
 
-    except (URLError, TimeoutError, OSError) as exc:
-        return {
-            "ok": False,
-            "status": None,
-            "error": str(exc),
-        }
+        if parsed.username or parsed.password:
+            return None
+
+        # Accessing .port can raise ValueError for malformed ports.
+        _ = parsed.port
+
+        return joined
+
+    except (ValueError, TypeError, UnicodeError):
+        return None
 
 
 def normalize_url(base, candidate):
-    """Normalize URL fragments and common tracking parameters."""
+    """Normalize URLs and remove common tracking parameters."""
 
-    candidate = urljoin(base, candidate)
-    candidate, _ = urldefrag(candidate)
-    parsed = urlparse(candidate)
+    candidate = safe_urljoin(base, candidate)
 
-    if parsed.scheme not in ("http", "https"):
+    if not candidate:
         return None
 
-    if not parsed.hostname or parsed.username or parsed.password:
+    try:
+        parsed = urlparse(candidate)
+        hostname = parsed.hostname.lower()
+
+        if parsed.port:
+            netloc = f"{hostname}:{parsed.port}"
+        else:
+            netloc = hostname
+
+        query_items = []
+
+        for key, value in parse_qsl(
+            parsed.query,
+            keep_blank_values=True,
+        ):
+            lowered = key.lower()
+
+            if lowered.startswith("utm_"):
+                continue
+
+            if lowered in TRACKING_PARAMETERS:
+                continue
+
+            query_items.append((key, value))
+
+        query_items.sort()
+
+        path = parsed.path or "/"
+
+        if path != "/":
+            path = path.rstrip("/")
+
+        return urlunparse((
+            parsed.scheme.lower(),
+            netloc,
+            path,
+            "",
+            urlencode(query_items),
+            "",
+        ))
+
+    except (ValueError, TypeError, UnicodeError):
         return None
-
-    hostname = parsed.hostname.lower()
-
-    if parsed.port:
-        netloc = f"{hostname}:{parsed.port}"
-    else:
-        netloc = hostname
-
-    query_items = []
-
-    for key, value in parse_qsl(
-        parsed.query, keep_blank_values=True
-    ):
-        lowered = key.lower()
-
-        if lowered.startswith("utm_"):
-            continue
-
-        if lowered in TRACKING_PARAMETERS:
-            continue
-
-        query_items.append((key, value))
-
-    query_items.sort()
-
-    path = parsed.path or "/"
-
-    # Treat a trailing slash as optional, except for the root page.
-    if path != "/":
-        path = path.rstrip("/")
-
-    return urlunparse((
-        parsed.scheme.lower(),
-        netloc,
-        path,
-        "",
-        urlencode(query_items),
-        "",
-    ))
 
 
 def same_host(url, host):
-    return urlparse(url).hostname == host
+    try:
+        return urlparse(url).hostname == host
+    except (ValueError, TypeError):
+        return False
 
 
 def is_document_url(url):
-    return urlparse(url).path.lower().endswith(
-        DOCUMENT_EXTENSIONS
-    )
+    try:
+        return urlparse(url).path.lower().endswith(
+            DOCUMENT_EXTENSIONS
+        )
+    except (ValueError, TypeError):
+        return False
 
 
 def classify_candidate(url, title=""):
-    """Suggest a category based on URL and available title only."""
+    """Suggest a category from the URL and available title."""
+
+    try:
+        path = urlparse(url).path
+    except (ValueError, TypeError):
+        path = url
 
     text = (
-        urlparse(url).path + " " + title
+        path + " " + (title or "")
     ).replace("_", " ").replace("-", " ").lower()
 
     categories = [
@@ -287,6 +296,60 @@ def classify_candidate(url, title=""):
     return "legal_related_page_unclassified"
 
 
+def fetch(url):
+    """Fetch a public resource without bypassing access controls."""
+
+    try:
+        parsed = urlparse(url)
+
+        if (
+            parsed.scheme.lower() not in ("http", "https")
+            or not parsed.hostname
+            or parsed.username
+            or parsed.password
+        ):
+            return {
+                "ok": False,
+                "status": None,
+                "error": "Invalid or unsupported URL",
+            }
+
+        request = Request(
+            url,
+            headers={"User-Agent": USER_AGENT},
+        )
+
+        with urlopen(request, timeout=TIMEOUT) as response:
+            body = response.read(MAX_BYTES + 1)
+
+            if len(body) > MAX_BYTES:
+                body = body[:MAX_BYTES]
+
+            return {
+                "ok": True,
+                "status": response.getcode(),
+                "final_url": response.geturl(),
+                "content_type": response.headers.get(
+                    "Content-Type", ""
+                ),
+                "body": body,
+            }
+
+    except HTTPError as exc:
+        return {
+            "ok": False,
+            "status": exc.code,
+            "error": str(exc.reason),
+        }
+
+    except (URLError, TimeoutError, OSError, ValueError) as exc:
+        return {
+            "ok": False,
+            "status": None,
+            "error": str(exc)[:500],
+        }
+
+
 def extract_date(parser):
     """Return an available publication or modification date."""
 
@@ -311,7 +374,7 @@ def extract_date(parser):
 
 
 def inspect_page(url):
-    """Check accessibility and extract basic metadata for HTML pages."""
+    """Check accessibility and extract basic page metadata."""
 
     result = fetch(url)
 
@@ -351,18 +414,24 @@ def inspect_page(url):
 
     parser = PageParser()
 
-    parser.feed(
-        result["body"].decode("utf-8", errors="replace")
-    )
+    try:
+        parser.feed(
+            result["body"].decode("utf-8", errors="replace")
+        )
 
-    title = " ".join(parser.title_parts).strip()
+        title = " ".join(parser.title_parts).strip()
 
-    if not title:
-        title = " ".join(parser.h1_parts).strip()
+        if not title:
+            title = " ".join(parser.h1_parts).strip()
 
-    metadata["title"] = title[:300] if title else None
-    metadata["available_date"] = extract_date(parser)
-    metadata["access_result"] = "accessible_html"
+        metadata["title"] = title[:300] if title else None
+        metadata["available_date"] = extract_date(parser)
+        metadata["access_result"] = "accessible_html"
+
+    except Exception as exc:
+        # A malformed HTML page should not stop discovery.
+        metadata["access_result"] = "accessible_html_parse_error"
+        metadata["error"] = str(exc)[:500]
 
     return metadata
 
@@ -372,7 +441,7 @@ def parse_sitemap(data):
 
     try:
         root = ET.fromstring(data)
-    except ET.ParseError:
+    except (ET.ParseError, ValueError):
         return urls
 
     for element in root.iter():
@@ -388,29 +457,31 @@ def get_sitemap_urls(base_url, host):
 
     root = base_url.rstrip("/") + "/"
 
-    robots_url = urljoin(root, "robots.txt")
+    robots_url = safe_urljoin(root, "robots.txt")
     common_sitemaps = [
-        urljoin(root, "sitemap.xml"),
-        urljoin(root, "sitemap_index.xml"),
+        safe_urljoin(root, "sitemap.xml"),
+        safe_urljoin(root, "sitemap_index.xml"),
     ]
 
-    sitemap_urls = []
+    sitemap_urls = [
+        url for url in common_sitemaps if url
+    ]
 
-    robots = fetch(robots_url)
+    if robots_url:
+        robots = fetch(robots_url)
 
-    if robots["ok"]:
-        text = robots["body"].decode(
-            "utf-8", errors="replace"
-        )
+        if robots["ok"]:
+            text = robots["body"].decode(
+                "utf-8", errors="replace"
+            )
 
-        for line in text.splitlines():
-            if line.lower().startswith("sitemap:"):
-                sitemap = line.split(":", 1)[1].strip()
+            for line in text.splitlines():
+                if line.lower().startswith("sitemap:"):
+                    sitemap = line.split(":", 1)[1].strip()
+                    normalized = normalize_url(root, sitemap)
 
-                if urlparse(sitemap).hostname == host:
-                    sitemap_urls.append(sitemap)
-
-    sitemap_urls.extend(common_sitemaps)
+                    if normalized and same_host(normalized, host):
+                        sitemap_urls.append(normalized)
 
     return list(dict.fromkeys(sitemap_urls))
 
@@ -434,7 +505,6 @@ def inspect_sitemap(
         if not normalized or not same_host(normalized, host):
             continue
 
-        # Limit sitemap recursion to avoid accidental sitemap loops.
         if normalized.lower().endswith(".xml"):
             if len(visited_sitemaps) < 20:
                 inspect_sitemap(
@@ -445,7 +515,10 @@ def inspect_sitemap(
                 )
             continue
 
-        if LEGAL_TERMS.search(normalized) or is_document_url(normalized):
+        if (
+            LEGAL_TERMS.search(normalized)
+            or is_document_url(normalized)
+        ):
             found.setdefault(normalized, "sitemap")
 
         if len(found) >= MAX_URLS_PER_SOURCE:
@@ -458,11 +531,17 @@ def inspect_homepage_links(base_url, host, found):
     if not result["ok"]:
         status = result.get("status")
 
+        if status == 403:
+            result_name = "forbidden"
+        elif status == 404:
+            result_name = "not_found"
+        elif status == 429:
+            result_name = "rate_limited"
+        else:
+            result_name = "unreachable"
+
         return {
-            "result": (
-                "forbidden" if status == 403
-                else "unreachable"
-            ),
+            "result": result_name,
             "http_status": status,
             "error": result.get("error"),
         }
@@ -477,19 +556,35 @@ def inspect_homepage_links(base_url, host, found):
 
     parser = LinkParser()
 
-    parser.feed(
-        result["body"].decode("utf-8", errors="replace")
-    )
+    try:
+        parser.feed(
+            result["body"].decode("utf-8", errors="replace")
+        )
+    except Exception as exc:
+        return {
+            "result": "html_parse_error",
+            "http_status": result.get("status"),
+            "error": str(exc)[:500],
+        }
+
+    malformed_links_skipped = 0
 
     for href in parser.links:
         normalized = normalize_url(
-            result["final_url"], href
+            result.get("final_url", base_url), href
         )
 
-        if not normalized or not same_host(normalized, host):
+        if not normalized:
+            malformed_links_skipped += 1
             continue
 
-        if LEGAL_TERMS.search(normalized) or is_document_url(normalized):
+        if not same_host(normalized, host):
+            continue
+
+        if (
+            LEGAL_TERMS.search(normalized)
+            or is_document_url(normalized)
+        ):
             found.setdefault(normalized, "homepage_link")
 
         if len(found) >= MAX_URLS_PER_SOURCE:
@@ -499,13 +594,18 @@ def inspect_homepage_links(base_url, host, found):
         "result": "checked",
         "http_status": result.get("status"),
         "links_examined": len(parser.links),
+        "malformed_links_skipped": malformed_links_skipped,
     }
 
 
 def discover_source(source):
     base_url = source.get("url", "")
-    parsed = urlparse(base_url)
-    host = parsed.hostname
+
+    try:
+        parsed = urlparse(base_url)
+        host = parsed.hostname
+    except (ValueError, TypeError):
+        host = None
 
     output = {
         "source_id": source.get("source_id"),
@@ -519,17 +619,25 @@ def discover_source(source):
         "duplicate_urls_removed": 0,
         "metadata_checks_performed": 0,
         "metadata_checks_skipped": 0,
+        "candidate_errors": 0,
         "candidates": [],
         "notes": [
             "Candidate discovery only; legal status is not verified.",
             "Category labels are automated suggestions, not legal conclusions.",
             "Redistribution permission requires human review.",
             "A reachable page is not proof that its content is current.",
+            "Malformed URLs and individual fetch failures are recorded or skipped without stopping the source run.",
         ],
     }
 
-    if not host or parsed.scheme not in ("http", "https"):
+    if (
+        not host
+        or parsed.scheme.lower() not in ("http", "https")
+        or parsed.username
+        or parsed.password
+    ):
         output["discovery_status"] = "invalid_source_url"
+        output["error"] = "Invalid or unsupported source URL"
         return output
 
     found = {}
@@ -542,12 +650,20 @@ def discover_source(source):
     visited_sitemaps = set()
 
     for sitemap_url in sitemap_urls:
-        inspect_sitemap(
-            sitemap_url,
-            host,
-            found,
-            visited_sitemaps,
-        )
+        try:
+            inspect_sitemap(
+                sitemap_url,
+                host,
+                found,
+                visited_sitemaps,
+            )
+        except Exception as exc:
+            # Keep processing even if an individual sitemap is malformed.
+            output["candidate_errors"] += 1
+            output.setdefault("warnings", []).append(
+                f"Sitemap processing failed: {str(exc)[:200]}"
+            )
+
         time.sleep(0.2)
 
     output["sitemaps_checked"] = len(visited_sitemaps)
@@ -556,8 +672,8 @@ def discover_source(source):
         :MAX_URLS_PER_SOURCE
     ]
 
-    output["duplicate_urls_removed"] = max(
-        0, len(found) - len(unique_candidates)
+    output["duplicate_urls_removed"] = (
+        len(found) - len(unique_candidates)
     )
 
     for index, (url, discovery_method) in enumerate(
@@ -573,11 +689,21 @@ def discover_source(source):
         }
 
         if index < MAX_METADATA_CHECKS_PER_SOURCE:
-            metadata = inspect_page(url)
+            try:
+                metadata = inspect_page(url)
+            except Exception as exc:
+                # One bad candidate must never abort the entire workflow.
+                metadata["access_result"] = "inspection_error"
+                metadata["error"] = str(exc)[:500]
+                output["candidate_errors"] += 1
+
             output["metadata_checks_performed"] += 1
             time.sleep(0.2)
         else:
             output["metadata_checks_skipped"] += 1
+
+        if metadata.get("error"):
+            output["candidate_errors"] += 1
 
         title = metadata.get("title")
 
@@ -590,7 +716,9 @@ def discover_source(source):
             "title": title,
             "available_date": metadata.get("available_date"),
             "discovery_method": discovery_method,
-            "candidate_type": classify_candidate(url, title or ""),
+            "candidate_type": classify_candidate(
+                url, title or ""
+            ),
             "technical_access": metadata.get("access_result"),
             "http_status": metadata.get("http_status"),
             "access_error": metadata.get("error"),
@@ -641,18 +769,35 @@ def main():
         if not isinstance(source, dict):
             continue
 
-        result = discover_source(source)
+        try:
+            result = discover_source(source)
+        except Exception as exc:
+            # Unexpected source-level errors are recorded so later sources
+            # can still be processed. No source is silently marked verified.
+            result = {
+                "source_id": source.get("source_id"),
+                "source_name": source.get("name"),
+                "source_url": source.get("url"),
+                "discovery_status": "source_processing_error",
+                "error": str(exc)[:1000],
+                "candidate_count": 0,
+                "candidates": [],
+                "notes": [
+                    "This source failed during discovery.",
+                    "No legal status or redistribution rights are established.",
+                ],
+            }
+
         results.append(result)
 
         print(
-            f"{result['discovery_status'].upper():20} "
+            f"{result['discovery_status'].upper():24} "
             f"{result.get('source_id')} — "
             f"{len(result.get('candidates', []))} candidate(s)"
         )
 
         time.sleep(0.5)
 
-    # Deduplicate URLs across sources in the summary.
     all_urls = [
         candidate["url"]
         for result in results
@@ -668,6 +813,11 @@ def main():
         ),
         "summary": {
             "sources_processed": len(results),
+            "sources_with_errors": sum(
+                1 for result in results
+                if result.get("discovery_status") != "completed"
+                or result.get("candidate_errors", 0) > 0
+            ),
             "candidates_found": len(all_urls),
             "unique_urls_across_sources": len(set(all_urls)),
             "duplicate_urls_across_sources": (
@@ -688,7 +838,9 @@ def main():
     )
 
     print(f"\nReport saved to: {REPORT.relative_to(ROOT)}")
-    print("Review all candidate records before adding materials to the library.")
+    print(
+        "Review all candidate records before adding materials to the library."
+    )
 
 
 if __name__ == "__main__":
