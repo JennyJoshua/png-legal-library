@@ -17,7 +17,7 @@ sources:
       - legislation
       - parliamentary_information
     base_url: "https://www.parliament.gov.pg/"
-    status: needs_verification
+    status: verified
     collection_method: manual_review
     redistribution_permission: unknown
     notes: "Check for official Acts, bills, and legislative records."
@@ -28,7 +28,7 @@ sources:
       - court_judgments
       - court_information
     base_url: "https://www.pngjudiciary.gov.pg/"
-    status: needs_verification
+    status: verified
     collection_method: manual_review
     redistribution_permission: unknown
     notes: "Verify the official website and available judgment collections."
