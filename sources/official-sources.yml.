@@ -1,0 +1,62 @@
+# PNG Legal Library — Official Source Register
+# Initial source candidates. Verify URLs, authority, access conditions,
+# and reuse permissions before automated collection.
+#
+# Source status values:
+# needs_verification
+# verified
+# temporarily_unavailable
+# retired
+
+schema_version: 1
+
+sources:
+  - source_id: png_parliament
+    name: Parliament of Papua New Guinea
+    category:
+      - legislation
+      - parliamentary_information
+    base_url: "https://www.parliament.gov.pg/"
+    status: needs_verification
+    collection_method: manual_review
+    redistribution_permission: unknown
+    notes: "Check for official Acts, bills, and legislative records."
+
+  - source_id: png_judiciary
+    name: National and Supreme Courts of Papua New Guinea
+    category:
+      - court_judgments
+      - court_information
+    base_url: "https://www.pngjudiciary.gov.pg/"
+    status: needs_verification
+    collection_method: manual_review
+    redistribution_permission: unknown
+    notes: "Verify the official website and available judgment collections."
+
+  - source_id: paclii
+    name: Pacific Islands Legal Information Institute
+    category:
+      - legislation
+      - court_judgments
+      - legal_research
+    base_url: "https://www.paclii.org/"
+    status: needs_verification
+    collection_method: manual_review
+    redistribution_permission: unknown
+    notes: "Check PNG coverage, document dates, legal status, and reuse terms."
+
+source_record_requirements:
+  - source_id
+  - name
+  - category
+  - base_url
+  - status
+  - collection_method
+  - redistribution_permission
+
+rules:
+  - "Do not assume that a document is current law merely because it is online."
+  - "Verify source identity and document status before marking content verified."
+  - "Check copyright and redistribution conditions before storing document copies."
+  - "Record the date and evidence for every verification."
+  - "Do not automatically mark legal content as current or in force."
