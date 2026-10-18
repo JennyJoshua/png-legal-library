@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "jurisdiction": "Papua New Guinea",
+  "last_updated": null,
+  "documents": [],
+  "notes": [
+    "This register is initially empty.",
+    "Add documents only when there is evidence supporting their metadata.",
+    "Do not assume an online document is current law.",
+    "Do not mark a document verified until its source and relevant legal status have been checked.",
+    "Check copyright and redistribution permissions before adding document copies.",
+    "Record unknown information as unknown rather than guessing."
+  ]
+}
