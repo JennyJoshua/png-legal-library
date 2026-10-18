@@ -1,14 +1,36 @@
 {
   "schema_version": 1,
   "jurisdiction": "Papua New Guinea",
-  "last_updated": null,
-  "documents": [],
+  "last_updated": "2026-10-18",
+  "documents": [
+    {
+      "document_id": "png-constitution",
+      "title": "Constitution of the Independent State of Papua New Guinea",
+      "document_type": "constitution",
+      "jurisdiction": "Papua New Guinea",
+      "issuing_authority": "National Parliament of Papua New Guinea",
+      "source_id": "png_parliament",
+      "source_url": "https://www.parliament.gov.pg/images/misc/PNG-CONSTITUTION.pdf",
+      "publication_date": null,
+      "commencement_date": "1975-09-16",
+      "date_added": "2026-10-18",
+      "last_verified_date": null,
+      "verification_status": "pending_review",
+      "legal_status": "status_unknown",
+      "legal_status_evidence": null,
+      "amendments": [],
+      "related_document_ids": [],
+      "language": "en",
+      "file_path": null,
+      "checksum_sha256": null,
+      "redistribution_permission": "unknown",
+      "reviewer_notes": "Initial candidate identified on the Parliament website. Confirm whether this copy incorporates subsequent amendments, establish the applicable legal status, and check reproduction permissions before downloading or redistributing it."
+    }
+  ],
   "notes": [
-    "This register is initially empty.",
-    "Add documents only when there is evidence supporting their metadata.",
-    "Do not assume an online document is current law.",
-    "Do not mark a document verified until its source and relevant legal status have been checked.",
-    "Check copyright and redistribution permissions before adding document copies.",
-    "Record unknown information as unknown rather than guessing."
+    "A document's presence in this register does not establish that it is current law.",
+    "Do not invent missing metadata.",
+    "Keep unverified legal status explicitly unknown.",
+    "Check copyright and redistribution permissions before publishing document copies."
   ]
 }
