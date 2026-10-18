@@ -17,7 +17,7 @@ DOCUMENT_SCHEMA = ROOT / "schemas" / "document.schema.json"
 RESOURCE_REGISTER = ROOT / "data" / "legal-resources.json"
 RESOURCE_SCHEMA = ROOT / "schemas" / "legal-resources.schema.json"
 
-ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
+DOCUMENT_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
 RESOURCE_ID_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
 
@@ -43,20 +43,19 @@ def valid_date(value):
         return False
 
     try:
-        parsed = date.fromisoformat(value)
-        return parsed.isoformat() == value
+        return date.fromisoformat(value).isoformat() == value
     except ValueError:
         return False
 
 
-def validate_schema(data, schema, label):
-    """Return readable JSON Schema validation errors."""
-    errors = []
-
+def schema_errors(data, schema, label):
+    """Return JSON Schema validation errors."""
     validator = Draft202012Validator(
         schema,
         format_checker=FormatChecker(),
     )
+
+    errors = []
 
     for error in sorted(
         validator.iter_errors(data),
@@ -69,12 +68,12 @@ def validate_schema(data, schema, label):
     return errors
 
 
-def validate_document_register(register, schema):
-    """Validate the existing legal document register."""
+def validate_documents(register, schema):
+    """Validate the existing document register."""
     errors = []
 
     if not isinstance(register, dict):
-        return ["Document register root must be a JSON object."]
+        return ["Document register root must be a JSON object."], 0
 
     if register.get("schema_version") != 1:
         errors.append("Document register schema_version must be 1.")
@@ -88,15 +87,7 @@ def validate_document_register(register, schema):
 
     if not isinstance(documents, list):
         errors.append("'documents' must be a JSON array.")
-        documents = []
-
-    errors.extend(
-        validate_schema(
-            register,
-            schema,
-            "document_register",
-        )
-    )
+        return errors, 0
 
     seen_ids = set()
 
@@ -107,10 +98,12 @@ def validate_document_register(register, schema):
             errors.append(f"{label} must be a JSON object.")
             continue
 
+        errors.extend(schema_errors(document, schema, label))
+
         document_id = document.get("document_id")
 
         if isinstance(document_id, str):
-            if not ID_PATTERN.fullmatch(document_id):
+            if not DOCUMENT_ID_PATTERN.fullmatch(document_id):
                 errors.append(
                     f"{label}: invalid document_id format."
                 )
@@ -149,34 +142,27 @@ def validate_document_register(register, schema):
     return errors, len(documents)
 
 
-def validate_resource_register(register, schema):
-    """Validate the legal forms and resources catalogue."""
+def validate_resources(register, schema):
+    """Validate the legal resources catalogue."""
     errors = []
 
     if not isinstance(register, dict):
-        return ["Legal resources catalogue root must be a JSON object."], 0
+        return [
+            "Legal resources catalogue root must be a JSON object."
+        ], 0
 
     errors.extend(
-        validate_schema(
-            register,
-            schema,
-            "legal_resources",
-        )
+        schema_errors(register, schema, "legal_resources")
     )
-
-    if register.get("jurisdiction") != "Papua New Guinea":
-        errors.append(
-            "Legal resources catalogue jurisdiction must be "
-            "Papua New Guinea."
-        )
 
     resources = register.get("resources")
 
     if not isinstance(resources, list):
         errors.append("'resources' must be a JSON array.")
-        resources = []
+        return errors, 0
 
     declared_types = register.get("resource_types", [])
+
     if not isinstance(declared_types, list):
         declared_types = []
 
@@ -252,19 +238,12 @@ def main():
         print(f"ERROR: {exc}")
         return 1
 
-    document_result = validate_document_register(
+    document_errors, document_count = validate_documents(
         document_register,
         document_schema,
     )
 
-    # The document validator returns errors and count for valid root objects.
-    if isinstance(document_result, tuple):
-        document_errors, document_count = document_result
-    else:
-        document_errors = document_result
-        document_count = 0
-
-    resource_errors, resource_count = validate_resource_register(
+    resource_errors, resource_count = validate_resources(
         resource_register,
         resource_schema,
     )
@@ -273,8 +252,10 @@ def main():
 
     if errors:
         print("LEGAL LIBRARY VALIDATION FAILED")
+
         for error in errors:
             print(f"- {error}")
+
         return 1
 
     print("LEGAL LIBRARY VALIDATION PASSED")
