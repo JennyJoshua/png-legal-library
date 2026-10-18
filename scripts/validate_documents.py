@@ -26,7 +26,7 @@ CANDIDATE_ID_PATTERN = re.compile(r"^[a-f0-9]{16}$")
 
 
 def load_json(path):
-    """Load JSON and report readable errors."""
+    """Load JSON and provide readable errors."""
     try:
         with path.open("r", encoding="utf-8") as file:
             return json.load(file)
@@ -73,13 +73,31 @@ def schema_errors(data, schema, label):
 
 
 def validate_documents(register, schema):
-    """Validate the existing document register."""
+    """Validate the register structure and each individual document."""
     errors = []
 
     if not isinstance(register, dict):
         return ["Document register root must be a JSON object."], 0
 
-    errors.extend(schema_errors(register, schema, "documents"))
+    if register.get("schema_version") != 1:
+        errors.append("Document register schema_version must be 1.")
+
+    if register.get("jurisdiction") != "Papua New Guinea":
+        errors.append(
+            "Document register jurisdiction must be Papua New Guinea."
+        )
+
+    if "last_updated" in register:
+        value = register["last_updated"]
+        if value is not None and not valid_date(value):
+            errors.append(
+                "Document register last_updated must be a valid "
+                "YYYY-MM-DD date or null."
+            )
+
+    if "notes" in register:
+        if not isinstance(register["notes"], list):
+            errors.append("Document register notes must be a JSON array.")
 
     documents = register.get("documents")
 
@@ -90,19 +108,20 @@ def validate_documents(register, schema):
     seen_ids = set()
 
     for index, document in enumerate(documents):
+        label = f"documents.documents[{index}]"
+
         if not isinstance(document, dict):
-            errors.append(
-                f"documents.documents[{index}] must be a JSON object."
-            )
+            errors.append(f"{label} must be a JSON object.")
             continue
+
+        # IMPORTANT: the document schema validates ONE record at a time.
+        errors.extend(schema_errors(document, schema, label))
 
         document_id = document.get("document_id")
 
-        if document_id:
+        if isinstance(document_id, str) and document_id:
             if document_id in seen_ids:
-                errors.append(
-                    f"Duplicate document_id: {document_id}"
-                )
+                errors.append(f"Duplicate document_id: {document_id}")
             seen_ids.add(document_id)
 
         verification_status = document.get("verification_status")
@@ -138,7 +157,7 @@ def validate_documents(register, schema):
 
 
 def validate_resources(register, schema):
-    """Validate the legal resources catalogue."""
+    """Validate the complete legal resources catalogue."""
     errors = []
 
     if not isinstance(register, dict):
@@ -164,11 +183,9 @@ def validate_resources(register, schema):
 
         resource_id = resource.get("resource_id")
 
-        if resource_id:
+        if isinstance(resource_id, str) and resource_id:
             if resource_id in seen_ids:
-                errors.append(
-                    f"Duplicate resource_id: {resource_id}"
-                )
+                errors.append(f"Duplicate resource_id: {resource_id}")
             seen_ids.add(resource_id)
 
         if resource.get("legal_status") == "in_force":
@@ -212,7 +229,7 @@ def validate_review_queue(queue, schema):
         review_status = candidate.get("review_status")
         legal_status = candidate.get("legal_status")
 
-        if candidate_id:
+        if isinstance(candidate_id, str) and candidate_id:
             if not CANDIDATE_ID_PATTERN.fullmatch(candidate_id):
                 errors.append(
                     f"Candidate at index {index}: candidate_id "
@@ -221,9 +238,7 @@ def validate_review_queue(queue, schema):
                 )
 
             if candidate_id in seen_ids:
-                errors.append(
-                    f"Duplicate candidate_id: {candidate_id}"
-                )
+                errors.append(f"Duplicate candidate_id: {candidate_id}")
 
             seen_ids.add(candidate_id)
 
@@ -272,7 +287,7 @@ def validate_review_queue(queue, schema):
 
 
 def main():
-    """Run all validation checks."""
+    """Run validation for all three legal registers."""
     all_errors = []
 
     try:
