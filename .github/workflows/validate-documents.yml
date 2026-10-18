@@ -1,0 +1,42 @@
+name: Validate Legal Document Register
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'data/documents.json'
+      - 'schemas/document.schema.json'
+      - 'scripts/validate_documents.py'
+      - '.github/workflows/validate-documents.yml'
+
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'data/documents.json'
+      - 'schemas/document.schema.json'
+      - 'scripts/validate_documents.py'
+      - '.github/workflows/validate-documents.yml'
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Check Document Metadata
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate document register
+        run: python scripts/validate_documents.py
