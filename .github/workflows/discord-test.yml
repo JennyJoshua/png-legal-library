@@ -1,0 +1,42 @@
+name: Discord Notification Test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send test notification to Discord
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
+            echo "DISCORD_WEBHOOK_URL repository secret is missing."
+            exit 1
+          fi
+
+          MESSAGE=$(jq -n \
+            --arg repo "$REPOSITORY" \
+            --arg url "$RUN_URL" \
+            '{
+              content: (
+                "🧪 Discord notification test successful!\n" +
+                "Repository: " + $repo + "\n" +
+                "Run details: " + $url
+              )
+            }')
+
+          curl --fail-with-body --silent --show-error \
+            -H "Content-Type: application/json" \
+            -d "$MESSAGE" \
+            "$DISCORD_WEBHOOK_URL"
+
+          echo "Discord test notification sent."
