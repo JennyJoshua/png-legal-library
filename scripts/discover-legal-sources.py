@@ -7,6 +7,7 @@ legal effect, or permission to redistribute a resource.
 
 import hashlib
 import json
+import os
 import re
 import time
 import xml.etree.ElementTree as ET
@@ -38,11 +39,28 @@ ROOT = Path(__file__).resolve().parents[1]
 REGISTRY = ROOT / "sources" / "discovery-sources.yml"
 REPORT = ROOT / "reports" / "discovered-source-candidates.json"
 
-TIMEOUT = 15
-MAX_BYTES = 2_000_000
-MAX_URLS_PER_SOURCE = 300
-MAX_METADATA_CHECKS_PER_SOURCE = 100
-USER_AGENT = "PNG-Legal-Library-Discovery/2.1"
+def _env_int(name, default, minimum=1, maximum=10000):
+    try:
+        value = int(os.environ.get(name, default))
+    except (TypeError, ValueError):
+        value = default
+    return max(minimum, min(value, maximum))
+
+
+# Conservative defaults keep scheduled discovery bounded. Values can be
+# overridden in GitHub Actions without editing source code.
+TIMEOUT = _env_int("PNG_DISCOVERY_REQUEST_TIMEOUT", 6, 1, 15)
+MAX_BYTES = _env_int("PNG_DISCOVERY_MAX_BYTES", 1_000_000, 1024, 2_000_000)
+MAX_URLS_PER_SOURCE = _env_int("PNG_DISCOVERY_MAX_URLS_PER_SOURCE", 40, 1, 300)
+MAX_METADATA_CHECKS_PER_SOURCE = _env_int("PNG_DISCOVERY_MAX_METADATA_CHECKS", 12, 1, 100)
+MAX_SITEMAPS_PER_SOURCE = _env_int("PNG_DISCOVERY_MAX_SITEMAPS", 5, 1, 20)
+MAX_SITEMAP_DEPTH = _env_int("PNG_DISCOVERY_MAX_SITEMAP_DEPTH", 2, 1, 5)
+MAX_SITEMAP_URLS = _env_int("PNG_DISCOVERY_MAX_SITEMAP_URLS", 500, 10, 5000)
+SOURCE_BUDGET_SECONDS = _env_int("PNG_DISCOVERY_SOURCE_BUDGET_SECONDS", 75, 10, 180)
+RUN_BUDGET_SECONDS = _env_int("PNG_DISCOVERY_RUN_BUDGET_SECONDS", 480, 30, 600)
+RUN_DEADLINE = None
+CURRENT_SOURCE_DEADLINE = None
+USER_AGENT = "PNG-Legal-Library-Discovery/2.2"
 
 TRACKING_PARAMETERS = {
     "fbclid",
@@ -300,6 +318,11 @@ def fetch(url):
     """Fetch a public resource without bypassing access controls."""
 
     try:
+        now = time.monotonic()
+        deadlines = [d for d in (RUN_DEADLINE, CURRENT_SOURCE_DEADLINE) if d is not None]
+        if deadlines and now >= min(deadlines):
+            return {"ok": False, "status": None, "error": "Discovery time budget exhausted"}
+
         parsed = urlparse(url)
 
         if (
@@ -319,7 +342,9 @@ def fetch(url):
             headers={"User-Agent": USER_AGENT},
         )
 
-        with urlopen(request, timeout=TIMEOUT) as response:
+        remaining = min(deadlines) - now if deadlines else TIMEOUT
+        request_timeout = max(0.1, min(TIMEOUT, remaining))
+        with urlopen(request, timeout=request_timeout) as response:
             body = response.read(MAX_BYTES + 1)
 
             if len(body) > MAX_BYTES:
@@ -483,13 +508,18 @@ def get_sitemap_urls(base_url, host):
                     if normalized and same_host(normalized, host):
                         sitemap_urls.append(normalized)
 
-    return list(dict.fromkeys(sitemap_urls))
+    return list(dict.fromkeys(sitemap_urls))[:MAX_SITEMAPS_PER_SOURCE]
 
 
 def inspect_sitemap(
-    sitemap_url, host, found, visited_sitemaps
+    sitemap_url, host, found, visited_sitemaps, depth=0
 ):
-    if sitemap_url in visited_sitemaps:
+    if (
+        sitemap_url in visited_sitemaps
+        or depth >= MAX_SITEMAP_DEPTH
+        or len(visited_sitemaps) >= MAX_SITEMAPS_PER_SOURCE
+        or (CURRENT_SOURCE_DEADLINE is not None and time.monotonic() >= CURRENT_SOURCE_DEADLINE)
+    ):
         return
 
     visited_sitemaps.add(sitemap_url)
@@ -499,7 +529,7 @@ def inspect_sitemap(
     if not result["ok"]:
         return
 
-    for item in parse_sitemap(result["body"]):
+    for item in parse_sitemap(result["body"])[:MAX_SITEMAP_URLS]:
         normalized = normalize_url(sitemap_url, item)
 
         if not normalized or not same_host(normalized, host):
@@ -512,6 +542,7 @@ def inspect_sitemap(
                     host,
                     found,
                     visited_sitemaps,
+                    depth + 1,
                 )
             continue
 
@@ -569,7 +600,7 @@ def inspect_homepage_links(base_url, host, found):
 
     malformed_links_skipped = 0
 
-    for href in parser.links:
+    for href in parser.links[:MAX_SITEMAP_URLS]:
         normalized = normalize_url(
             result.get("final_url", base_url), href
         )
@@ -650,6 +681,9 @@ def discover_source(source):
     visited_sitemaps = set()
 
     for sitemap_url in sitemap_urls:
+        if CURRENT_SOURCE_DEADLINE is not None and time.monotonic() >= CURRENT_SOURCE_DEADLINE:
+            output.setdefault("warnings", []).append("Source time budget reached during sitemap discovery.")
+            break
         try:
             inspect_sitemap(
                 sitemap_url,
@@ -679,6 +713,11 @@ def discover_source(source):
     for index, (url, discovery_method) in enumerate(
         unique_candidates
     ):
+        if CURRENT_SOURCE_DEADLINE is not None and time.monotonic() >= CURRENT_SOURCE_DEADLINE:
+            output["metadata_checks_skipped"] += len(unique_candidates) - index
+            output.setdefault("warnings", []).append("Source time budget reached; remaining candidate metadata checks skipped.")
+            break
+
         metadata = {
             "http_status": None,
             "access_result": "not_checked",
@@ -730,8 +769,16 @@ def discover_source(source):
 
         output["candidates"].append(candidate)
 
-    output["discovery_status"] = "completed"
     output["candidate_count"] = len(output["candidates"])
+    if (
+        CURRENT_SOURCE_DEADLINE is not None
+        and time.monotonic() >= CURRENT_SOURCE_DEADLINE
+    ):
+        output["discovery_status"] = "partial_time_budget"
+    elif output.get("warnings"):
+        output["discovery_status"] = "completed_with_warnings"
+    else:
+        output["discovery_status"] = "completed"
 
     return output
 
@@ -763,12 +810,32 @@ def main():
             "ERROR: registry 'sources' must be a list."
         )
 
+    global RUN_DEADLINE, CURRENT_SOURCE_DEADLINE
+    run_started = time.monotonic()
+    RUN_DEADLINE = run_started + RUN_BUDGET_SECONDS
     results = []
 
     for source in sources:
         if not isinstance(source, dict):
             continue
 
+        if time.monotonic() >= RUN_DEADLINE:
+            results.append({
+                "source_id": source.get("source_id"),
+                "source_name": source.get("name"),
+                "source_url": source.get("url"),
+                "discovery_status": "skipped_run_budget",
+                "error": "Overall discovery time budget exhausted before this source started.",
+                "candidate_count": 0,
+                "candidates": [],
+                "notes": ["Not processed within the configured run time budget.", "No legal status or redistribution rights are established."]
+            })
+            continue
+
+        CURRENT_SOURCE_DEADLINE = min(
+            RUN_DEADLINE,
+            time.monotonic() + SOURCE_BUDGET_SECONDS
+        )
         try:
             result = discover_source(source)
         except Exception as exc:
@@ -796,8 +863,11 @@ def main():
             f"{len(result.get('candidates', []))} candidate(s)"
         )
 
-        time.sleep(0.5)
+        if time.monotonic() < RUN_DEADLINE:
+            time.sleep(min(0.1, max(0, RUN_DEADLINE - time.monotonic())))
 
+    CURRENT_SOURCE_DEADLINE = None
+    elapsed_seconds = round(time.monotonic() - run_started, 2)
     all_urls = [
         candidate["url"]
         for result in results
@@ -813,6 +883,10 @@ def main():
         ),
         "summary": {
             "sources_processed": len(results),
+            "run_elapsed_seconds": elapsed_seconds,
+            "run_budget_seconds": RUN_BUDGET_SECONDS,
+            "source_budget_seconds": SOURCE_BUDGET_SECONDS,
+            "request_timeout_seconds": TIMEOUT,
             "sources_with_errors": sum(
                 1 for result in results
                 if result.get("discovery_status") != "completed"
@@ -837,6 +911,7 @@ def main():
         encoding="utf-8",
     )
 
+    print(f"Run elapsed: {elapsed_seconds}s (budget: {RUN_BUDGET_SECONDS}s)")
     print(f"\nReport saved to: {REPORT.relative_to(ROOT)}")
     print(
         "Review all candidate records before adding materials to the library."
