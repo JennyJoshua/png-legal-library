@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#17324d">
+  <title>PNG Legal Library</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand-mark" aria-hidden="true">PNG</div>
+    <div><p class="eyebrow">PAPUA NEW GUINEA</p><h1>Legal Library</h1></div>
+    <span id="index-status" class="status" role="status">Checking library…</span>
+  </header>
+  <main>
+    <section class="intro">
+      <p class="eyebrow">RESEARCH PORTAL</p>
+      <h2>Find legal documents and source passages</h2>
+      <p>Search the locally prepared legal library. Results include document versions and source references so you can check the original material.</p>
+    </section>
+    <section class="search-panel" aria-labelledby="search-heading">
+      <h2 id="search-heading">Search the legal library</h2>
+      <form id="search-form">
+        <label for="query">Search terms or legal question</label>
+        <textarea id="query" name="query" rows="3" maxlength="1000" required placeholder="For example: interpretation of court powers"></textarea>
+        <div class="controls">
+          <label class="select-label" for="match">Match terms
+            <select id="match" name="match"><option value="all">All terms</option><option value="any">Any term</option></select>
+          </label>
+          <label class="select-label" for="limit">Maximum results
+            <select id="limit" name="limit"><option>5</option><option selected>10</option><option>20</option><option>50</option></select>
+          </label>
+          <button id="search-button" type="submit">Search library</button>
+        </div>
+      </form>
+      <p class="hint">Search uses the local keyword index. It does not yet generate AI legal answers.</p>
+    </section>
+    <section id="results-section" aria-live="polite">
+      <div class="results-heading"><h2>Search results</h2><span id="result-count"></span></div>
+      <div id="message" class="message">Enter search terms to begin.</div>
+      <div id="results" class="results-list"></div>
+    </section>
+    <section class="notice">
+      <h2>Important legal information</h2>
+      <p>This portal supports legal research; it is not legal advice. A search result or citation does not prove that a document is authentic, current, in force, or legally effective. Check the authoritative original and seek qualified legal advice where needed.</p>
+    </section>
+  </main>
+  <footer><span>PNG Legal Library</span><span>Local research portal · No external AI service connected</span></footer>
+</body>
+</html>
