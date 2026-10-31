@@ -26,9 +26,9 @@ class StaticPortalTests(unittest.TestCase):
         self.assertIn("esc(r.text)", self.html)
         self.assertIn("esc(title)", self.html)
 
-    def test_source_links_are_restricted_to_http_schemes(self):
+    def test_source_links_are_restricted_to_https(self):
         self.assertIn("function safeHttpUrl(value)", self.html)
-        self.assertIn('url.protocol==="http:"||url.protocol==="https:"', self.html)
+        self.assertIn('url.protocol==="https:"', self.html)
         self.assertIn("safeHttpUrl(r.source_url)", self.html)
         self.assertIn('rel="noopener noreferrer"', self.html)
 
