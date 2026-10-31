@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PNG Legal Library Extraction Result",
+  "description": "Derivative text extraction metadata linked to a registered source version.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "extraction_schema_version",
+    "document_id",
+    "version_id",
+    "source_url",
+    "source_id",
+    "source_checksum_sha256",
+    "source_file_name",
+    "extracted_at",
+    "format",
+    "extraction_tool",
+    "extraction_details",
+    "segments",
+    "total_character_count",
+    "warning"
+  ],
+  "properties": {
+    "extraction_schema_version": {
+      "const": "1.0"
+    },
+    "document_id": {
+      "type": "string"
+    },
+    "version_id": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{16}$"
+    },
+    "document_title": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "source_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "source_id": {
+      "type": "string"
+    },
+    "source_checksum_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "source_file_name": {
+      "type": "string"
+    },
+    "source_media_type": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "extracted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "format": {
+      "enum": [
+        "pdf",
+        "docx"
+      ]
+    },
+    "extraction_tool": {
+      "enum": [
+        "PyMuPDF",
+        "python-docx"
+      ]
+    },
+    "extraction_details": {
+      "type": "object"
+    },
+    "segments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "reference",
+          "text",
+          "character_count"
+        ],
+        "properties": {
+          "reference": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "character_count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "total_character_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "warning": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}
