@@ -56,6 +56,7 @@ const words=s=>(String(s||"").toLowerCase().match(/[\p{L}\p{N}]+/gu)||[]);
 function recordText(r){return [r.document_title,r.document_id,r.title,r.number,r.text,r.source_reference].join(" ");}
 function getLocation(r){return r.location||{};}
 function sourceRef(r){const l=getLocation(r);return l.source_reference||r.source_reference||"Location not recorded";}
+function safeHttpUrl(value){try{const url=new URL(String(value),window.location.href);return url.protocol==="http:"||url.protocol==="https:"?url.href:"";}catch{return "";}}
 function loadRecords(data){
  let list=Array.isArray(data)?data:(data&&Array.isArray(data.records)?data.records:null);
  if(!list)throw new Error("Unsupported index format: expected an array or an object with a records array.");
@@ -80,7 +81,7 @@ function search(){
  $("results").innerHTML=found.map(({r,score})=>{
  const title=(r.document_title||r.document_id||"Untitled document")+(r.number?" — Section "+r.number:r.title?" — "+r.title:"");
  const checksum=r.source_checksum_sha256||"Not recorded";
- return '<article class="result"><h3>'+esc(title)+'</h3><p>'+esc(r.text)+'</p><p class="meta">Source location: '+esc(sourceRef(r))+' · Version: '+esc(r.version_id||"unknown")+' · Match score: '+score+'</p><p class="meta">Document ID: '+esc(r.document_id||"unknown")+' · Checksum: '+esc(checksum)+'</p>'+(r.source_url?'<p><a href="'+esc(r.source_url)+'" target="_blank" rel="noopener noreferrer">Open recorded source URL</a></p>':"")+'</article>';
+ return '<article class="result"><h3>'+esc(title)+'</h3><p>'+esc(r.text)+'</p><p class="meta">Source location: '+esc(sourceRef(r))+' · Version: '+esc(r.version_id||"unknown")+' · Match score: '+score+'</p><p class="meta">Document ID: '+esc(r.document_id||"unknown")+' · Checksum: '+esc(checksum)+'</p>'+(safeHttpUrl(r.source_url)?'<p><a href="'+esc(safeHttpUrl(r.source_url))+'" target="_blank" rel="noopener noreferrer">Open recorded source URL</a></p>':"")+'</article>';
  }).join("");
 }
 $("indexFile").addEventListener("change",async e=>{const file=e.target.files&&e.target.files[0];if(!file)return;try{const data=JSON.parse(await file.text());loadRecords(data);}catch(err){records=[];$("loadStatus").textContent="Could not load index: "+err.message;}});
