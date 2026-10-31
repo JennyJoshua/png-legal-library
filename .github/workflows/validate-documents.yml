@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - phase3/document-processing
+      - phase4/segmentation-and-search
     paths:
       - 'data/documents.json'
       - 'data/document-versions.json'
