@@ -8,6 +8,16 @@ from build_legal_index import build
 from search_legal_index import search
 
 class SegmentationTests(unittest.TestCase):
+    def test_previous_section_keeps_its_own_structure_path(self):
+        nodes = segment_text(
+            "1. Interpretation\nCourt means a court.\n2. Application\nThis Act applies.",
+            "PDF page 1", "sample", "1234567890abcdef"
+        )
+        self.assertEqual(nodes[0]["number"], "1")
+        self.assertEqual(nodes[0]["structure_path"][-1]["number"], "1")
+        self.assertEqual(nodes[1]["number"], "2")
+        self.assertEqual(nodes[1]["structure_path"][-1]["number"], "2")
+
     def test_parts_divisions_sections_and_nested_provisions(self):
         text = "PART I—PRELIMINARY\nDIVISION 1—INTRODUCTORY\n1. Short title.\n(1) This Act may be cited as the Sample Act.\n(2) This Act applies in Papua New Guinea.\n(a) It applies to public authorities.\n2. Interpretation.\n(a) court means a court of competent jurisdiction."
         nodes = segment_text(text, "PDF page 4", "sample-act", "1234567890abcdef")
