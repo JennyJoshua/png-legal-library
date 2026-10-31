@@ -14,6 +14,7 @@ import shutil
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urlsplit
 from uuid import uuid4
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -66,15 +67,26 @@ def parse_args(argv=None):
 def intake(args):
     if not ID_PATTERN.fullmatch(args.document_id):
         raise ValueError("document-id must use lowercase letters, digits, dots, underscores or hyphens.")
-    if not args.source_url.startswith("https://"):
-        raise ValueError("source-url must use HTTPS.")
+    supplied_url = urlsplit(args.source_url)
+    if (supplied_url.scheme != "https" or not supplied_url.hostname
+            or supplied_url.username or supplied_url.password
+            or supplied_url.fragment or supplied_url.port not in (None, 443)):
+        raise ValueError("source-url must be a credential-free HTTPS URL on the standard port, without a fragment.")
     source_data = __import__("yaml").safe_load(SOURCE_REGISTRY.read_text(encoding="utf-8"))
     sources = {item["source_id"]: item for item in source_data["sources"]}
     if args.source_id not in sources:
         raise ValueError(f"Unknown source-id: {args.source_id}")
     source = sources[args.source_id]
-    if not args.source_url.startswith(source["url"].rstrip("/") + "/") and args.source_url.rstrip("/") != source["url"].rstrip("/"):
-        raise ValueError("source-url must be on the registered source host/path. Review the source registry before using another URL.")
+    registered_url = urlsplit(source["url"])
+    registered_path = registered_url.path.rstrip("/")
+    candidate_path = supplied_url.path.rstrip("/")
+    path_matches = (candidate_path == registered_path or
+                    candidate_path.startswith(registered_path + "/"))
+    if (supplied_url.scheme != "https"
+            or supplied_url.hostname.casefold() != (registered_url.hostname or "").casefold()
+            or registered_url.port not in (None, 443)
+            or not path_matches):
+        raise ValueError("source-url must use the exact registered HTTPS host and remain within its registered path.")
 
     supplied = Path(args.file).expanduser()
     if not supplied.is_file() or supplied.is_symlink():
