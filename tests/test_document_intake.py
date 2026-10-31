@@ -114,6 +114,24 @@ class DocumentIntakeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "HTTPS"):
             intake.intake(args)
 
+    def test_lookalike_hostname_is_rejected(self):
+        args = self.args()
+        args.source_url = "https://parliament.gov.pg.attacker.example/file.pdf"
+        with self.assertRaisesRegex(ValueError, "exact registered HTTPS host"):
+            intake.intake(args)
+
+    def test_credentials_in_source_url_are_rejected(self):
+        args = self.args()
+        args.source_url = "https://user:password@parliament.gov.pg/file.pdf"
+        with self.assertRaisesRegex(ValueError, "credential-free HTTPS"):
+            intake.intake(args)
+
+    def test_registered_path_prefix_boundary_is_enforced(self):
+        args = self.args()
+        args.source_url = "https://parliament.gov.pg.evil.example/file.pdf"
+        with self.assertRaisesRegex(ValueError, "exact registered HTTPS host"):
+            intake.intake(args)
+
     def test_symlink_rejected(self):
         link = self.base / "linked.pdf"
         link.symlink_to(self.file)
