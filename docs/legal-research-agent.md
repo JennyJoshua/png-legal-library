@@ -1,26 +1,25 @@
 # Milestone 6 — AI legal research agent
 
 ## Purpose
-Provide a provider-neutral orchestration layer that retrieves traceable passages, prepares a strict evidence-only model request, validates model citations against retrieved citation IDs, and refuses to generate an answer when no traceable evidence exists.
+A provider-neutral, evidence-first orchestration layer for Papua New Guinea legal research. It retrieves passages using the Milestone 5 engine, prepares a strict evidence-only request for an explicitly supplied model adapter, and validates every returned citation ID against the retrieved evidence.
 
 ## Current capability
-`scripts/legal_research_agent.py` is a local Python module and CLI. It uses the Milestone 5 retrieval engine. Without a model adapter it returns relevant evidence and explicitly reports `model_not_configured`; it never fabricates an answer. A future adapter is an explicitly injected Python callable receiving a request with `system` and `user` strings and returning the required JSON object.
+Run locally:
 
-## Model response contract
-The adapter must return:
+    python scripts/legal_research_agent.py "What does section 5 say about a court?"
+
+When no model adapter is configured, the CLI returns traceable passages and reports `model_not_configured`. It does not generate or pretend to generate a legal answer. If no traceable passages match, it returns `insufficient_evidence`.
+
+A future model adapter is a Python callable receiving a request with `system` and `user` strings and returning a JSON object. No provider, API key, network call, paid service, or model dependency is bundled.
+
+## Response contract
+The model must return:
 - `answer`: non-empty string
 - `claims`: array of objects containing `text` and non-empty `citation_ids`
 - `limitations`: array of strings
 - `insufficient_evidence`: boolean
 
-Every citation ID must exist in the retrieval result for that question. Invalid or invented citation IDs and uncited claims are rejected. This validates citation membership, not whether the cited text truly entails the claim; human review remains necessary.
+Every citation ID must exist in the retrieval result for that question. Invented citation IDs and uncited claims are rejected. The check confirms citation membership, not whether the passage logically supports the claim; human review remains necessary.
 
-## Run without a model
-Build the local index, then run:
-
-    python scripts/legal_research_agent.py "What does section 5 say about a court?"
-
-The output will contain traceable evidence and `model_not_configured` until a provider adapter is explicitly installed/configured.
-
-## Safety and limitations
-This is legal research assistance, not legal advice or representation. It does not determine whether legislation is in force, authenticate source copies, check amendments, or establish legal effect. The model adapter is not bundled; no paid API or network connection is called. Do not connect a provider until its cost, privacy, data handling, availability in PNG, and free-tier limits have been checked. A citation-membership check is not a semantic entailment check; review answers against authoritative originals.
+## Safeguards and limitations
+The agent must use only supplied passages, must not invent legal sources or status, and must state when evidence is insufficient. It does not authenticate source documents, determine whether legislation is in force, verify amendments or commencement, or provide legal advice. Always check authoritative current originals. A real model provider must be assessed separately for cost, PNG availability, privacy, data handling, and free-tier limits before connection.
