@@ -1,0 +1,306 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PNG Legal Resource Review Queue",
+  "description": "Validates discovered legal-resource candidates awaiting human review.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "queue_version",
+    "jurisdiction",
+    "description",
+    "last_updated",
+    "review_policy",
+    "review_statuses",
+    "candidates",
+    "usage_notes"
+  ],
+  "properties": {
+    "queue_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "jurisdiction": {
+      "type": "string",
+      "const": "Papua New Guinea"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "last_updated": {
+      "type": ["string", "null"],
+      "format": "date"
+    },
+    "review_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "automatic_approval",
+        "automatic_legal_status_changes",
+        "automatic_redistribution_approval",
+        "require_human_review",
+        "preserve_source_url",
+        "protect_personal_information"
+      ],
+      "properties": {
+        "automatic_approval": {
+          "type": "boolean",
+          "const": false
+        },
+        "automatic_legal_status_changes": {
+          "type": "boolean",
+          "const": false
+        },
+        "automatic_redistribution_approval": {
+          "type": "boolean",
+          "const": false
+        },
+        "require_human_review": {
+          "type": "boolean",
+          "const": true
+        },
+        "preserve_source_url": {
+          "type": "boolean",
+          "const": true
+        },
+        "protect_personal_information": {
+          "type": "boolean",
+          "const": true
+        }
+      }
+    },
+    "review_statuses": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "pending_review",
+          "under_review",
+          "approved_for_catalogue",
+          "rejected",
+          "duplicate",
+          "inaccessible",
+          "needs_more_evidence"
+        ]
+      },
+      "minItems": 7,
+      "maxItems": 7
+    },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/candidate"
+      }
+    },
+    "usage_notes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "$defs": {
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_id",
+        "url",
+        "review_status",
+        "legal_status",
+        "redistribution_permission"
+      ],
+      "properties": {
+        "candidate_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{16}$"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https?://"
+        },
+        "final_url": {
+          "type": ["string", "null"],
+          "format": "uri"
+        },
+        "title": {
+          "type": ["string", "null"]
+        },
+        "available_date": {
+          "type": ["string", "null"]
+        },
+        "discovery_method": {
+          "type": ["string", "null"]
+        },
+        "candidate_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_id": {
+          "type": ["string", "null"]
+        },
+        "source_name": {
+          "type": ["string", "null"]
+        },
+        "source_url": {
+          "type": ["string", "null"],
+          "format": "uri"
+        },
+        "source_type": {
+          "type": ["string", "null"]
+        },
+        "source_review_status": {
+          "type": ["string", "null"]
+        },
+        "technical_access": {
+          "type": "string",
+          "enum": [
+            "accessible_html",
+            "accessible_non_html",
+            "accessible_html_parse_error",
+            "not_checked",
+            "forbidden",
+            "not_found",
+            "rate_limited",
+            "http_error",
+            "network_error",
+            "unreachable",
+            "inspection_error"
+          ]
+        },
+        "http_status": {
+          "type": ["integer", "null"],
+          "minimum": 100,
+          "maximum": 599
+        },
+        "access_error": {
+          "type": ["string", "null"]
+        },
+        "review_status": {
+          "type": "string",
+          "enum": [
+            "pending_review",
+            "under_review",
+            "approved_for_catalogue",
+            "rejected",
+            "duplicate",
+            "inaccessible",
+            "needs_more_evidence"
+          ]
+        },
+        "resource_type": {
+          "type": "string",
+          "enum": [
+            "official_form",
+            "blank_legal_document",
+            "document_template",
+            "court_rule",
+            "procedural_guide",
+            "legal_publication",
+            "official_report",
+            "legal_notice",
+            "government_policy",
+            "research_material",
+            "other"
+          ]
+        },
+        "classification": {
+          "type": "string",
+          "enum": [
+            "official_prescribed_form",
+            "official_blank_document",
+            "general_template",
+            "ai_generated_draft",
+            "reference_material",
+            "not_classified"
+          ]
+        },
+        "jurisdiction": {
+          "type": "string",
+          "const": "Papua New Guinea"
+        },
+        "legal_status": {
+          "type": "string",
+          "enum": [
+            "in_force",
+            "repealed",
+            "superseded",
+            "not_applicable",
+            "status_unknown"
+          ]
+        },
+        "legal_status_evidence": {
+          "type": ["string", "null"]
+        },
+        "redistribution_permission": {
+          "type": "string",
+          "enum": [
+            "permitted",
+            "prohibited",
+            "unknown"
+          ]
+        },
+        "reviewer_notes": {
+          "type": ["string", "null"]
+        },
+        "reviewed_by": {
+          "type": ["string", "null"]
+        },
+        "reviewed_date": {
+          "type": ["string", "null"],
+          "format": "date"
+        },
+        "duplicate_of": {
+          "type": ["string", "null"]
+        },
+        "catalogue_resource_id": {
+          "type": ["string", "null"],
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "review_status": {
+                "const": "approved_for_catalogue"
+              }
+            },
+            "required": ["review_status"]
+          },
+          "then": {
+            "required": [
+              "resource_type",
+              "classification",
+              "reviewed_by",
+              "reviewed_date"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "legal_status": {
+                "const": "in_force"
+              }
+            },
+            "required": ["legal_status"]
+          },
+          "then": {
+            "properties": {
+              "legal_status_evidence": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": ["legal_status_evidence"]
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "queue_version": "1.0",
+  "jurisdiction": "Papua New Guinea",
+  "description": "Human-review queue for legal-resource candidates discovered by the PNG Legal Library automation.",
+  "last_updated": null,
+  "review_policy": {
+    "automatic_approval": false,
+    "automatic_legal_status_changes": false,
+    "automatic_redistribution_approval": false,
+    "require_human_review": true,
+    "preserve_source_url": true,
+    "protect_personal_information": true
+  },
+  "review_statuses": [
+    "pending_review",
+    "under_review",
+    "approved_for_catalogue",
+    "rejected",
+    "duplicate",
+    "inaccessible",
+    "needs_more_evidence"
+  ],
+  "candidates": [],
+  "usage_notes": [
+    "Discovery does not establish authenticity, legal effect, current legal status, or redistribution rights.",
+    "Review the source identity and individual resource before approving a candidate.",
+    "Verify legal status using appropriate evidence before recording a resource as in force.",
+    "Check redistribution permission before storing or distributing a document copy.",
+    "When permission is unknown, retain the source link and permitted metadata instead of assuming copying is allowed.",
+    "Do not add personal, confidential, or completed case documents.",
+    "Keep rejected and duplicate records distinguishable from approved records.",
+    "Only approved candidates may be considered for transfer to data/legal-resources.json."
+  ]
+}

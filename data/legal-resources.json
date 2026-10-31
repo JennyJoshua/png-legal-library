@@ -1,0 +1,28 @@
+{
+  "catalogue_version": "1.0",
+  "jurisdiction": "Papua New Guinea",
+  "last_updated": null,
+  "description": "Catalogue of legal forms, templates, official publications, procedural guides, and other legal resources for the PNG Legal Assistance project.",
+  "resource_types": [
+    "official_form",
+    "blank_legal_document",
+    "document_template",
+    "court_rule",
+    "procedural_guide",
+    "legal_publication",
+    "official_report",
+    "legal_notice",
+    "government_policy",
+    "research_material",
+    "other"
+  ],
+  "resources": [],
+  "usage_notes": [
+    "Record source details and verification status before making resources available to users.",
+    "Distinguish official prescribed forms from general templates and AI-generated drafts.",
+    "Do not assume that a resource is current merely because its webpage or file is accessible.",
+    "Check copyright and redistribution permission before storing or distributing document copies.",
+    "Where copying permission is unknown, record metadata and the official source link instead.",
+    "Never include completed legal documents containing personal or confidential information."
+  ]
+}

@@ -1,0 +1,457 @@
+#!/usr/bin/env python3
+"""Validate PNG Legal Library registers, catalogue, and review queue."""
+
+import json
+import re
+import sys
+from datetime import date
+from pathlib import Path
+
+from jsonschema import Draft202012Validator, FormatChecker
+import yaml
+
+ROOT = Path(__file__).resolve().parent.parent
+
+DOCUMENT_REGISTER = ROOT / "data" / "documents.json"
+DOCUMENT_SCHEMA = ROOT / "schemas" / "document.schema.json"
+
+RESOURCE_REGISTER = ROOT / "data" / "legal-resources.json"
+RESOURCE_SCHEMA = ROOT / "schemas" / "legal-resources.schema.json"
+
+REVIEW_QUEUE = ROOT / "data" / "legal-resource-review-queue.json"
+REVIEW_QUEUE_SCHEMA = (
+    ROOT / "schemas" / "legal-resource-review-queue.schema.json"
+)
+SOURCE_REGISTRY = ROOT / "sources" / "discovery-sources.yml"
+SOURCE_REGISTRY_SCHEMA = ROOT / "schemas" / "source-registry.schema.json"
+VERSION_HISTORY = ROOT / "data" / "document-versions.json"
+VERSION_HISTORY_SCHEMA = ROOT / "schemas" / "document-versions.schema.json"
+
+CANDIDATE_ID_PATTERN = re.compile(r"^[a-f0-9]{16}$")
+
+
+def load_json(path):
+    """Load JSON and provide readable errors."""
+    try:
+        with path.open("r", encoding="utf-8") as file:
+            return json.load(file)
+    except FileNotFoundError as exc:
+        raise ValueError(
+            f"Required file not found: {path.relative_to(ROOT)}"
+        ) from exc
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            f"Invalid JSON in {path.relative_to(ROOT)}: "
+            f"line {exc.lineno}, column {exc.colno}: {exc.msg}"
+        ) from exc
+
+
+def valid_date(value):
+    """Check an ISO YYYY-MM-DD date."""
+    if not isinstance(value, str):
+        return False
+
+    try:
+        return date.fromisoformat(value).isoformat() == value
+    except ValueError:
+        return False
+
+
+def schema_errors(data, schema, label):
+    """Return JSON Schema validation errors."""
+    validator = Draft202012Validator(
+        schema,
+        format_checker=FormatChecker(),
+    )
+
+    errors = []
+
+    for error in sorted(
+        validator.iter_errors(data),
+        key=lambda item: list(map(str, item.absolute_path)),
+    ):
+        field = ".".join(str(part) for part in error.absolute_path)
+        location = f"{label}.{field}" if field else label
+        errors.append(f"{location}: {error.message}")
+
+    return errors
+
+
+def validate_documents(register, schema):
+    """Validate the register structure and each individual document."""
+    errors = []
+
+    if not isinstance(register, dict):
+        return ["Document register root must be a JSON object."], 0
+
+    if register.get("schema_version") != 1:
+        errors.append("Document register schema_version must be 1.")
+
+    if register.get("jurisdiction") != "Papua New Guinea":
+        errors.append(
+            "Document register jurisdiction must be Papua New Guinea."
+        )
+
+    if "last_updated" in register:
+        value = register["last_updated"]
+        if value is not None and not valid_date(value):
+            errors.append(
+                "Document register last_updated must be a valid "
+                "YYYY-MM-DD date or null."
+            )
+
+    if "notes" in register:
+        if not isinstance(register["notes"], list):
+            errors.append("Document register notes must be a JSON array.")
+
+    documents = register.get("documents")
+
+    if not isinstance(documents, list):
+        errors.append("'documents' must be a JSON array.")
+        return errors, 0
+
+    seen_ids = set()
+
+    for index, document in enumerate(documents):
+        label = f"documents.documents[{index}]"
+
+        if not isinstance(document, dict):
+            errors.append(f"{label} must be a JSON object.")
+            continue
+
+        # IMPORTANT: the document schema validates ONE record at a time.
+        errors.extend(schema_errors(document, schema, label))
+
+        document_id = document.get("document_id")
+
+        if isinstance(document_id, str) and document_id:
+            if document_id in seen_ids:
+                errors.append(f"Duplicate document_id: {document_id}")
+            seen_ids.add(document_id)
+
+        verification_status = document.get("verification_status")
+        legal_status = document.get("legal_status")
+
+        if (
+            legal_status == "in_force"
+            and verification_status != "verified"
+        ):
+            errors.append(
+                f"Document {document_id or index}: "
+                "'in_force' requires verification_status 'verified'."
+            )
+
+        if verification_status == "verified":
+            last_verified_date = document.get("last_verified_date")
+            evidence = document.get("legal_status_evidence")
+
+            if not valid_date(last_verified_date):
+                errors.append(
+                    f"Document {document_id or index}: "
+                    "verified records require a valid "
+                    "last_verified_date (YYYY-MM-DD)."
+                )
+
+            if not isinstance(evidence, str) or not evidence.strip():
+                errors.append(
+                    f"Document {document_id or index}: "
+                    "verified records require legal_status_evidence."
+                )
+
+    return errors, len(documents)
+
+
+def validate_resources(register, schema):
+    """Validate the complete legal resources catalogue."""
+    errors = []
+
+    if not isinstance(register, dict):
+        return ["Legal resources root must be a JSON object."], 0
+
+    errors.extend(schema_errors(register, schema, "legal_resources"))
+
+    resources = register.get("resources")
+
+    if not isinstance(resources, list):
+        errors.append("'resources' must be a JSON array.")
+        return errors, 0
+
+    seen_ids = set()
+
+    for index, resource in enumerate(resources):
+        if not isinstance(resource, dict):
+            errors.append(
+                f"legal_resources.resources[{index}] "
+                "must be a JSON object."
+            )
+            continue
+
+        resource_id = resource.get("resource_id")
+
+        if isinstance(resource_id, str) and resource_id:
+            if resource_id in seen_ids:
+                errors.append(f"Duplicate resource_id: {resource_id}")
+            seen_ids.add(resource_id)
+
+        if resource.get("legal_status") == "in_force":
+            evidence = resource.get("legal_status_evidence")
+
+            if not isinstance(evidence, str) or not evidence.strip():
+                errors.append(
+                    f"Resource {resource_id or index}: "
+                    "'in_force' requires legal_status_evidence."
+                )
+
+    return errors, len(resources)
+
+
+def validate_review_queue(queue, schema):
+    """Validate the human-review queue."""
+    errors = []
+
+    if not isinstance(queue, dict):
+        return ["Review queue root must be a JSON object."], 0
+
+    errors.extend(schema_errors(queue, schema, "review_queue"))
+
+    candidates = queue.get("candidates")
+
+    if not isinstance(candidates, list):
+        errors.append("'candidates' must be a JSON array.")
+        return errors, 0
+
+    seen_ids = set()
+
+    for index, candidate in enumerate(candidates):
+        if not isinstance(candidate, dict):
+            errors.append(
+                f"review_queue.candidates[{index}] "
+                "must be a JSON object."
+            )
+            continue
+
+        candidate_id = candidate.get("candidate_id")
+        review_status = candidate.get("review_status")
+        legal_status = candidate.get("legal_status")
+
+        if isinstance(candidate_id, str) and candidate_id:
+            if not CANDIDATE_ID_PATTERN.fullmatch(candidate_id):
+                errors.append(
+                    f"Candidate at index {index}: candidate_id "
+                    "must contain exactly 16 lowercase hexadecimal "
+                    "characters."
+                )
+
+            if candidate_id in seen_ids:
+                errors.append(f"Duplicate candidate_id: {candidate_id}")
+
+            seen_ids.add(candidate_id)
+
+        if review_status == "approved_for_catalogue":
+            required_fields = (
+                "resource_type",
+                "classification",
+                "reviewed_by",
+                "reviewed_date",
+            )
+
+            for field in required_fields:
+                value = candidate.get(field)
+
+                if not isinstance(value, str) or not value.strip():
+                    errors.append(
+                        f"Candidate {candidate_id or index}: "
+                        f"approved records require '{field}'."
+                    )
+
+            if not valid_date(candidate.get("reviewed_date")):
+                errors.append(
+                    f"Candidate {candidate_id or index}: "
+                    "reviewed_date must be a valid YYYY-MM-DD date."
+                )
+
+        if legal_status == "in_force":
+            evidence = candidate.get("legal_status_evidence")
+
+            if not isinstance(evidence, str) or not evidence.strip():
+                errors.append(
+                    f"Candidate {candidate_id or index}: "
+                    "'in_force' requires legal_status_evidence."
+                )
+
+        if review_status == "duplicate":
+            duplicate_of = candidate.get("duplicate_of")
+
+            if not isinstance(duplicate_of, str) or not duplicate_of.strip():
+                errors.append(
+                    f"Candidate {candidate_id or index}: "
+                    "duplicate records require duplicate_of."
+                )
+
+    return errors, len(candidates)
+
+
+
+def load_yaml(path):
+    """Load YAML safely and provide readable errors."""
+    try:
+        with path.open("r", encoding="utf-8") as file:
+            return yaml.safe_load(file)
+    except FileNotFoundError as exc:
+        raise ValueError(
+            f"Required file not found: {path.relative_to(ROOT)}"
+        ) from exc
+    except yaml.YAMLError as exc:
+        raise ValueError(
+            f"Invalid YAML in {path.relative_to(ROOT)}: {exc}"
+        ) from exc
+
+
+def validate_source_registry(registry, schema, queue):
+    """Validate source governance and candidate-to-source provenance."""
+    errors = schema_errors(registry, schema, "source_registry")
+    if not isinstance(registry, dict):
+        return errors, 0
+    sources = registry.get("sources", [])
+    source_ids = set()
+    for source in sources:
+        if not isinstance(source, dict):
+            continue
+        source_id = source.get("source_id")
+        if source_id in source_ids:
+            errors.append(f"Duplicate source_id in source registry: {source_id}")
+        source_ids.add(source_id)
+    for index, candidate in enumerate(queue.get("candidates", [])):
+        if not isinstance(candidate, dict):
+            continue
+        source_id = candidate.get("source_id")
+        if source_id and source_id not in source_ids:
+            errors.append(
+                f"Candidate {candidate.get('candidate_id', index)} references "
+                f"unknown source_id '{source_id}'."
+            )
+    rules = registry.get("discovery_rules", {})
+    if isinstance(rules, dict) and rules.get("automatic_legal_status_changes") is not False:
+        errors.append("Source registry must disable automatic legal-status changes.")
+    if isinstance(rules, dict) and rules.get("automatic_redistribution_approval") is not False:
+        errors.append("Source registry must disable automatic redistribution approval.")
+    return errors, len(sources)
+
+
+
+def validate_document_versions(history, schema, register):
+    """Validate append-only version records and their document links."""
+    errors = schema_errors(history, schema, "document_versions")
+    if not isinstance(history, dict):
+        return errors, 0
+    documents = {item.get("document_id"): item for item in register.get("documents", []) if isinstance(item, dict)}
+    seen_version_ids = set()
+    seen_hashes = set()
+    by_document = {}
+    for version in history.get("versions", []):
+        if not isinstance(version, dict):
+            continue
+        version_id = version.get("version_id")
+        checksum = version.get("checksum_sha256")
+        document_id = version.get("document_id")
+        if version_id in seen_version_ids:
+            errors.append(f"Duplicate version_id: {version_id}")
+        seen_version_ids.add(version_id)
+        if checksum in seen_hashes:
+            errors.append(f"Duplicate checksum in version history: {checksum}")
+        seen_hashes.add(checksum)
+        if document_id not in documents:
+            errors.append(f"Version {version_id} references unknown document_id '{document_id}'.")
+        by_document.setdefault(document_id, []).append(version)
+    for document_id, versions in by_document.items():
+        versions.sort(key=lambda item: item.get("version_number", 0))
+        previous = None
+        for expected_number, version in enumerate(versions, start=1):
+            if version.get("version_number") != expected_number:
+                errors.append(f"Document {document_id}: version numbers must be sequential starting at 1.")
+            if version.get("previous_version_id") != previous:
+                errors.append(f"Document {document_id}: broken previous_version_id chain at version {version.get('version_number')}.")
+            previous = version.get("version_id")
+    return errors, len(history.get("versions", []))
+
+
+def main():
+    """Run validation for all legal registers and source/version records."""
+    all_errors = []
+
+    try:
+        document_register = load_json(DOCUMENT_REGISTER)
+        document_schema = load_json(DOCUMENT_SCHEMA)
+
+        resource_register = load_json(RESOURCE_REGISTER)
+        resource_schema = load_json(RESOURCE_SCHEMA)
+
+        review_queue = load_json(REVIEW_QUEUE)
+        review_queue_schema = load_json(REVIEW_QUEUE_SCHEMA)
+        source_registry = load_yaml(SOURCE_REGISTRY)
+        source_registry_schema = load_json(SOURCE_REGISTRY_SCHEMA)
+        version_history = load_json(VERSION_HISTORY)
+        version_history_schema = load_json(VERSION_HISTORY_SCHEMA)
+
+        document_errors, document_count = validate_documents(
+            document_register,
+            document_schema,
+        )
+
+        resource_errors, resource_count = validate_resources(
+            resource_register,
+            resource_schema,
+        )
+
+        queue_errors, candidate_count = validate_review_queue(
+            review_queue,
+            review_queue_schema,
+        )
+        source_errors, source_count = validate_source_registry(
+            source_registry,
+            source_registry_schema,
+            review_queue,
+        )
+        version_errors, version_count = validate_document_versions(
+            version_history, version_history_schema, document_register
+        )
+
+        all_errors.extend(document_errors)
+        all_errors.extend(resource_errors)
+        all_errors.extend(queue_errors)
+        all_errors.extend(source_errors)
+        all_errors.extend(version_errors)
+
+    except ValueError as exc:
+        print(f"VALIDATION ERROR: {exc}")
+        return 1
+
+    if all_errors:
+        print("LEGAL LIBRARY VALIDATION FAILED")
+        print()
+
+        for error in all_errors:
+            print(f"ERROR: {error}")
+
+        print()
+        print(f"Total errors: {len(all_errors)}")
+        return 1
+
+    print("LEGAL LIBRARY VALIDATION PASSED")
+    print(f"Document register: {document_count} record(s).")
+    print(f"Legal resources catalogue: {resource_count} resource(s).")
+    print(f"Legal resource review queue: {candidate_count} candidate(s).")
+    print(f"Discovery source registry: {source_count} source(s).")
+    print(f"Document version history: {version_count} version(s).")
+    print("All legal register, source registry, and version-history structures passed validation.")
+    print("Metadata consistency checks passed.")
+    print(
+        "Reminder: automated validation does not establish legal "
+        "authenticity, current legal status, or redistribution rights."
+    )
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

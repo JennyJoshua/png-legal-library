@@ -1,0 +1,199 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/JennyJoshua/png-legal-library/blob/main/schemas/legal-resources.schema.json",
+  "title": "PNG Legal Resources Catalogue",
+  "description": "Validates the catalogue of legal forms, templates, official publications, procedural guides, and other legal resources.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "catalogue_version",
+    "jurisdiction",
+    "last_updated",
+    "description",
+    "resource_types",
+    "resources",
+    "usage_notes"
+  ],
+  "properties": {
+    "catalogue_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "jurisdiction": {
+      "type": "string",
+      "const": "Papua New Guinea"
+    },
+    "last_updated": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "resource_types": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "enum": [
+          "official_form",
+          "blank_legal_document",
+          "document_template",
+          "court_rule",
+          "procedural_guide",
+          "legal_publication",
+          "official_report",
+          "legal_notice",
+          "government_policy",
+          "research_material",
+          "other"
+        ]
+      }
+    },
+    "resources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/resource"
+      }
+    },
+    "usage_notes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "$defs": {
+    "resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resource_id",
+        "title",
+        "resource_type",
+        "jurisdiction",
+        "verification_status",
+        "legal_status",
+        "redistribution_permission",
+        "source_url"
+      ],
+      "properties": {
+        "resource_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "resource_type": {
+          "type": "string",
+          "enum": [
+            "official_form",
+            "blank_legal_document",
+            "document_template",
+            "court_rule",
+            "procedural_guide",
+            "legal_publication",
+            "official_report",
+            "legal_notice",
+            "government_policy",
+            "research_material",
+            "other"
+          ]
+        },
+        "jurisdiction": {
+          "type": "string",
+          "minLength": 1
+        },
+        "issuing_authority": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source_url": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        },
+        "publication_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "revision_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "verification_status": {
+          "type": "string",
+          "enum": [
+            "pending_review",
+            "verified",
+            "verification_failed",
+            "status_unknown"
+          ]
+        },
+        "legal_status": {
+          "type": "string",
+          "enum": [
+            "in_force",
+            "repealed",
+            "superseded",
+            "not_applicable",
+            "status_unknown"
+          ]
+        },
+        "redistribution_permission": {
+          "type": "string",
+          "enum": [
+            "permitted",
+            "prohibited",
+            "unknown"
+          ]
+        },
+        "resource_classification": {
+          "type": "string",
+          "enum": [
+            "official_prescribed_form",
+            "official_blank_document",
+            "general_template",
+            "ai_generated_draft",
+            "reference_material",
+            "not_classified"
+          ]
+        },
+        "source_file": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "notes": {
+          "type": "string"
+        },
+        "last_checked": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        }
+      }
+    }
+  }
+}

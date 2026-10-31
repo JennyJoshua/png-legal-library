@@ -1,0 +1,13 @@
+
+
+# Local legal document copies are never committed to this public repository.
+.private/
+
+# Derived legal text may contain copyrighted or restricted material.
+extracted/
+
+legal-index/
+search-index/
+# Python runtime artifacts.
+__pycache__/
+*.py[cod]

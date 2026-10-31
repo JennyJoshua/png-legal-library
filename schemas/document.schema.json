@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PNG Legal Library Document Record",
+  "description": "Metadata for a Papua New Guinea legal document. A verified source does not automatically mean the document is currently in force.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "document_id",
+    "title",
+    "document_type",
+    "jurisdiction",
+    "source_url",
+    "verification_status",
+    "legal_status",
+    "date_added"
+  ],
+  "properties": {
+    "document_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "document_type": {
+      "type": "string",
+      "enum": [
+        "constitution",
+        "act",
+        "regulation",
+        "gazette_notice",
+        "court_judgment",
+        "court_rule",
+        "official_form",
+        "government_guidance",
+        "legal_aid_information",
+        "other"
+      ]
+    },
+    "jurisdiction": {
+      "type": "string",
+      "const": "Papua New Guinea"
+    },
+    "issuing_authority": {
+      "type": ["string", "null"]
+    },
+    "source_id": {
+      "type": ["string", "null"]
+    },
+    "source_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "publication_date": {
+      "type": ["string", "null"],
+      "format": "date"
+    },
+    "commencement_date": {
+      "type": ["string", "null"],
+      "format": "date"
+    },
+    "date_added": {
+      "type": "string",
+      "format": "date"
+    },
+    "last_verified_date": {
+      "type": ["string", "null"],
+      "format": "date"
+    },
+    "verification_status": {
+      "type": "string",
+      "enum": [
+        "discovered",
+        "pending_review",
+        "verified",
+        "verification_failed"
+      ]
+    },
+    "legal_status": {
+      "type": "string",
+      "enum": [
+        "in_force",
+        "amended",
+        "partially_repealed",
+        "repealed",
+        "superseded",
+        "not_yet_in_force",
+        "status_unknown",
+        "not_applicable"
+      ],
+      "default": "status_unknown"
+    },
+    "legal_status_evidence": {
+      "type": ["string", "null"]
+    },
+    "amendments": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "related_document_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "language": {
+      "type": "string",
+      "default": "en"
+    },
+    "file_path": {
+      "type": ["string", "null"]
+    },
+    "checksum_sha256": {
+      "type": ["string", "null"],
+      "pattern": "^[a-fA-F0-9]{64}$"
+    },
+    "redistribution_permission": {
+      "type": "string",
+      "enum": [
+        "permitted",
+        "restricted",
+        "prohibited",
+        "unknown"
+      ],
+      "default": "unknown"
+    },
+    "reviewer_notes": {
+      "type": ["string", "null"]
+    }
+  }
+}
