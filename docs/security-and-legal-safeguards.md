@@ -1,0 +1,38 @@
+# Milestone 9 — Security, accuracy and legal safeguards
+
+## Scope
+This milestone reviews the current local document-intake, extraction, retrieval, research-agent and browser-portal paths. It does not certify the application as secure or establish legal accuracy.
+
+## Changes made on this branch
+
+1. **Registered source URL validation** — intake now parses URLs and requires credential-free HTTPS on the standard port, exact registered hostname, and a path within the registered source path. This closes a hostname-prefix weakness where a deceptive hostname such as `parliament.gov.pg.attacker.example` could pass a simple string-prefix check.
+2. **Prompt-injection warning** — the research-agent system instructions now explicitly classify retrieved passage text as untrusted data and instruct a connected model not to follow embedded commands or prompts.
+3. **Portal link handling** — external source links are restricted to HTTPS; rendered source text remains HTML-escaped.
+4. **Regression tests** — tests cover deceptive hostnames, embedded URL credentials, registered-host boundaries, prompt-injection instruction wording, and HTTPS-only portal links.
+
+## Existing safeguards observed
+- Intake accepts a local file and does not download the supplied source URL.
+- Symlink inputs are rejected by the intake and extraction scripts.
+- File intake and extraction enforce a 100 MB upper bound.
+- Redistribution permission defaults to unknown; private archival only occurs when explicitly marked permitted.
+- New intake records remain pending review and legal status unknown.
+- Version checksums and document/version relationships are checked.
+- Retrieval rejects passages missing required provenance and warns that traceability does not prove authority or current force.
+- Research-agent output rejects fabricated citation IDs and uncited factual claims.
+- Portal uses a local file picker, makes no index upload request, escapes indexed text, and offers a clear-index control.
+
+## Important residual risks / work still required
+- **Prompt injection is not solved by prompt wording alone.** Any future model adapter needs adversarial tests and a design that treats retrieved text as data, limits tools/actions, and requires human review.
+- **Citation membership is not semantic verification.** A citation ID being present does not prove that a passage supports the associated claim.
+- **Source authenticity and legal currency remain manual review tasks.** The system does not determine commencement, amendments, repeal, consolidation, or whether an instrument is currently in force.
+- **File TOCTOU risk:** checking a path for symlink status and then reopening it leaves a small race window. A hardened file-open implementation using no-follow flags and file-descriptor-based size/hash/copy checks should be considered before handling untrusted bulk uploads.
+- **Index resource limits:** retrieval currently reads the JSON index into memory without an explicit index-file byte limit. Add a bounded index size and record-count limit before accepting large or hostile indexes.
+- **Archive and register writes:** the two JSON registers are replaced separately. A crash between writes can leave history and catalogue out of sync; a recovery/transaction strategy is needed.
+- **No authentication or hosted deployment:** the portal is local-only. If deployed publicly, access control, transport security, rate limits, logging, privacy review, backups, and security testing are required.
+- **No legal professional review:** human legal review and authoritative-source checks remain necessary before publishing or relying on legal content.
+
+## Acceptance status
+Code changes and regression tests are committed to this branch. Test execution must be reported separately; a committed test is not evidence that it passed. Do not describe this milestone as a security certification or as completion of legal validation.
+
+## Operating rule
+Do not ingest personal case details, client identities, confidential correspondence, or privileged documents into a future hosted or third-party AI service without a separate privacy and legal approval. No paid service or API is authorised by this milestone.
