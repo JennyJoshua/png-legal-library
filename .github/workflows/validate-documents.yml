@@ -6,6 +6,7 @@ on:
       - main
       - phase3/document-processing
       - phase4/segmentation-and-search
+      - phase9/security-legal-safeguards
     paths:
       - 'data/documents.json'
       - 'data/document-versions.json'
@@ -33,6 +34,18 @@ on:
       - 'docs/document-processing.md'
       - 'README.md'
       - '.gitignore'
+      - 'scripts/legal_research_agent.py'
+      - 'scripts/retrieve_legal_evidence.py'
+      - 'scripts/legal_qa.py'
+      - 'web/index.html'
+      - 'tests/test_legal_evidence_retrieval.py'
+      - 'tests/test_legal_research_agent.py'
+      - 'tests/test_legal_qa.py'
+      - 'tests/test_static_portal.py'
+      - 'docs/security-and-legal-safeguards.md'
+      - 'docs/legal-library-portal.md'
+      - 'docs/legal-qa-citations.md'
+      - 'docs/legal-research-agent.md'
       - '.github/workflows/validate-documents.yml'
 
   pull_request:
