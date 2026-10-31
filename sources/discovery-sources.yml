@@ -1,11 +1,8 @@
-registry_version: 1
-
+registry_version: 2
 purpose: >
-  Registry of approved candidate sources for discovering Papua New Guinea
-  legal materials. Inclusion does not establish that every document from
-  a source is authentic, current, legally effective, or available for
-  redistribution.
-
+  Registry of candidate discovery sources for Papua New Guinea legal materials.
+  Inclusion describes a discovery role only; it does not establish authenticity,
+  completeness, current legal effect, or redistribution rights.
 discovery_rules:
   automatic_discovery: true
   automatic_legal_status_changes: false
@@ -14,68 +11,69 @@ discovery_rules:
   retain_source_url: true
   record_discovery_date: true
   store_personal_case_information: false
-
 sources:
   - source_id: png_parliament
     name: Parliament of Papua New Guinea
     url: https://parliament.gov.pg/
     source_type: official_government
-    discovery_scope:
-      - bills
-      - legislation
-      - parliamentary_records
+    discovery_scope: [bills, parliamentary_records, legislation_progress]
     review_status: candidate
     redistribution_permission: unknown
-
-  - source_id: png_judiciary
-    name: Papua New Guinea Judiciary
-    url: https://www.pngjudiciary.gov.pg/
-    source_type: official_judicial
-    discovery_scope:
-      - court_judgments
-      - court_rules
-      - judicial_notices
-    review_status: needs_verification
-    redistribution_permission: unknown
-
-  - source_id: paclii
-    name: Pacific Islands Legal Information Institute
-    url: https://www.paclii.org/
-    source_type: legal_information_service
-    discovery_scope:
-      - legislation
-      - court_judgments
-      - legal_research
-    review_status: needs_verification
-    redistribution_permission: unknown
-
-  - source_id: png_djag
-    name: Department of Justice and Attorney General
-    url: https://justice.gov.pg/
-    source_type: official_government
-    discovery_scope:
-      - legislation
-      - justice_policy
-      - legal_information
-    review_status: candidate
-    redistribution_permission: unknown
-
   - source_id: png_ombudsman
     name: Ombudsman Commission of Papua New Guinea
     url: https://www.ombudsman.gov.pg/
     source_type: independent_constitutional_institution
-    discovery_scope:
-      - constitution
-      - organic_laws
-      - legislation
-      - official_reports
+    discovery_scope: [constitution, organic_laws, legislation, official_reports]
     review_status: candidate
     redistribution_permission: unknown
-
+  - source_id: png_judiciary
+    name: Papua New Guinea Judiciary
+    url: https://www.pngjudiciary.gov.pg/
+    source_type: official_judicial
+    discovery_scope: [court_judgments, court_rules, judicial_notices]
+    review_status: needs_verification
+    redistribution_permission: unknown
+  - source_id: paclii
+    name: Pacific Islands Legal Information Institute
+    url: https://www.paclii.org/
+    source_type: legal_information_service
+    discovery_scope: [legislation, court_judgments, legal_research]
+    review_status: needs_verification
+    redistribution_permission: unknown
+  - source_id: png_djag
+    name: Department of Justice and Attorney General
+    url: https://justice.gov.pg/
+    source_type: official_government
+    discovery_scope: [justice_policy, legal_information, statutory_office_information]
+    review_status: candidate
+    redistribution_permission: unknown
+  - source_id: png_olc_pmnec
+    name: Office of Legislative Counsel — PMNEC
+    url: https://pmnec.gov.pg/office-of-the-legislative-council/
+    source_type: official_government
+    discovery_scope: [legislative_drafting_information, legislative_amendment_information, official_law_edition_and_printing_information, provincial_and_local_level_legislation]
+    review_status: candidate
+    redistribution_permission: unknown
+  - source_id: png_clrc
+    name: Constitutional and Law Reform Commission of Papua New Guinea
+    url: https://clrc.gov.pg/
+    source_type: official_government
+    discovery_scope: [law_reform_reports, constitutional_review, organic_law_review, law_reform_recommendations]
+    review_status: candidate
+    redistribution_permission: unknown
+  - source_id: pngiportal_gazette_archive
+    name: PNGi Portal National Gazette archive
+    url: https://pngiportal.org/
+    source_type: legal_information_service
+    discovery_scope: [national_gazette_discovery, historical_gazette_copies]
+    review_status: needs_verification
+    redistribution_permission: unknown
 future_source_policy:
-  - Consider additional official national government agencies.
-  - Consider provincial and local-level government sources where relevant.
-  - Verify each source's identity, purpose, coverage, and terms.
+  - Prefer original official publications and certified copies for legal proof.
+  - Treat legal information services as discovery sources unless authority for a specific record is established.
+  - Treat law reform reports and recommendations as proposals or research, not enacted law.
+  - Verify source identity, purpose, coverage, terms, and document-level provenance.
   - Do not assume a government webpage contains the latest legal version.
   - Do not automatically mark discovered materials as current law.
-  - Record links to documents when copying or redistribution is not permitted.
+  - Record links when copying or redistribution is not permitted.
+  - Record the exact National Gazette issue, date, number, and page for gazetted instruments.

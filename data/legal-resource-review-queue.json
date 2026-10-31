@@ -1,34 +1,14 @@
 {
-  "queue_version": "1.0",
-  "jurisdiction": "Papua New Guinea",
-  "description": "Human-review queue for legal-resource candidates discovered by the PNG Legal Library automation.",
-  "last_updated": null,
-  "review_policy": {
-    "automatic_approval": false,
-    "automatic_legal_status_changes": false,
-    "automatic_redistribution_approval": false,
-    "require_human_review": true,
-    "preserve_source_url": true,
-    "protect_personal_information": true
-  },
-  "review_statuses": [
-    "pending_review",
-    "under_review",
-    "approved_for_catalogue",
-    "rejected",
-    "duplicate",
-    "inaccessible",
-    "needs_more_evidence"
+  "queue_version":"1.0","jurisdiction":"Papua New Guinea",
+  "description":"Human-review queue for PNG legal material discovery and document verification. Queue entries are leads, not verified legal instruments.",
+  "last_updated":"2026-10-31",
+  "review_policy":{"automatic_approval":false,"automatic_legal_status_changes":false,"automatic_redistribution_approval":false,"require_human_review":true,"preserve_source_url":true,"protect_personal_information":true},
+  "review_statuses":["pending_review","under_review","approved_for_catalogue","rejected","duplicate","inaccessible","needs_more_evidence"],
+  "candidates":[
+    {"candidate_id":"c0a0000000000001","url":"https://www.ombudsman.gov.pg/legislation/png-constitution/","title":"PNG Constitution online text — edition and amendment verification","available_date":null,"discovery_method":"official institutional website review","candidate_type":"constitution_text","source_id":"png_ombudsman","source_name":"Ombudsman Commission of Papua New Guinea","source_url":"https://www.ombudsman.gov.pg/","source_type":"independent_constitutional_institution","source_review_status":"candidate","technical_access":"not_checked","http_status":null,"access_error":null,"review_status":"needs_more_evidence","jurisdiction":"Papua New Guinea","legal_status":"status_unknown","legal_status_evidence":null,"redistribution_permission":"unknown","reviewer_notes":"Confirm edition, amendment coverage, certification/publication trail and later constitutional alterations against authoritative Gazette and parliamentary records. Page availability alone does not establish verification or current force."},
+    {"candidate_id":"c0a0000000000002","url":"https://pmnec.gov.pg/office-of-the-legislative-council/","title":"Office of Legislative Counsel — source authority and publication pathway review","available_date":null,"discovery_method":"official government website review","candidate_type":"source_authority_review","source_id":"png_olc_pmnec","source_name":"Office of Legislative Counsel — PMNEC","source_url":"https://pmnec.gov.pg/office-of-the-legislative-council/","source_type":"official_government","source_review_status":"candidate","technical_access":"not_checked","http_status":null,"access_error":null,"review_status":"needs_more_evidence","jurisdiction":"Papua New Guinea","legal_status":"not_applicable","legal_status_evidence":null,"redistribution_permission":"unknown","reviewer_notes":"PMNEC describes OLC functions involving legislative advice, vetting, amendments, editing and printing. Confirm whether OLC provides a public document repository or formal verification contact. This is a source lead, not a legal instrument."},
+    {"candidate_id":"c0a0000000000003","url":"https://clrc.gov.pg/","title":"CLRC — reports and recommendations discovery","available_date":null,"discovery_method":"official commission website review","candidate_type":"law_reform_source_review","source_id":"png_clrc","source_name":"Constitutional and Law Reform Commission of Papua New Guinea","source_url":"https://clrc.gov.pg/","source_type":"official_government","source_review_status":"candidate","technical_access":"not_checked","http_status":null,"access_error":null,"review_status":"needs_more_evidence","jurisdiction":"Papua New Guinea","legal_status":"not_applicable","legal_status_evidence":null,"redistribution_permission":"unknown","reviewer_notes":"Separate final reports, draft bills, constitutional directives and recommendations. A recommendation is not enacted law unless enactment and commencement are independently established."},
+    {"candidate_id":"c0a0000000000004","url":"https://pngiportal.org/","title":"National Gazette archive — coverage, provenance and reuse review","available_date":null,"discovery_method":"legal information archive discovery","candidate_type":"gazette_archive_review","source_id":"pngiportal_gazette_archive","source_name":"PNGi Portal National Gazette archive","source_url":"https://pngiportal.org/","source_type":"legal_information_service","source_review_status":"needs_verification","technical_access":"not_checked","http_status":null,"access_error":null,"review_status":"needs_more_evidence","jurisdiction":"Papua New Guinea","legal_status":"not_applicable","legal_status_evidence":null,"redistribution_permission":"unknown","reviewer_notes":"For each instrument capture Gazette issue number, date and page, then compare with an official or certified copy. Confirm archive completeness, scan integrity and redistribution terms."}
   ],
-  "candidates": [],
-  "usage_notes": [
-    "Discovery does not establish authenticity, legal effect, current legal status, or redistribution rights.",
-    "Review the source identity and individual resource before approving a candidate.",
-    "Verify legal status using appropriate evidence before recording a resource as in force.",
-    "Check redistribution permission before storing or distributing a document copy.",
-    "When permission is unknown, retain the source link and permitted metadata instead of assuming copying is allowed.",
-    "Do not add personal, confidential, or completed case documents.",
-    "Keep rejected and duplicate records distinguishable from approved records.",
-    "Only approved candidates may be considered for transfer to data/legal-resources.json."
-  ]
+  "usage_notes":["Discovery does not establish authenticity, legal effect, current legal status, or redistribution rights.","Review source identity and each resource before approval.","Verify legal status using appropriate evidence before recording a resource as in force.","Check redistribution permission before storing or distributing copies.","When permission is unknown, retain permitted metadata and source links instead of assuming copying is allowed.","Do not add personal, confidential, or completed case documents.","Keep rejected and duplicate records distinguishable from approved records.","Only approved candidates may be transferred to the legal-resources catalogue.","A source-authority review candidate is not itself legislation."]
 }
