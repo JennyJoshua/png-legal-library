@@ -24,6 +24,8 @@ REVIEW_QUEUE_SCHEMA = (
 )
 SOURCE_REGISTRY = ROOT / "sources" / "discovery-sources.yml"
 SOURCE_REGISTRY_SCHEMA = ROOT / "schemas" / "source-registry.schema.json"
+VERSION_HISTORY = ROOT / "data" / "document-versions.json"
+VERSION_HISTORY_SCHEMA = ROOT / "schemas" / "document-versions.schema.json"
 
 CANDIDATE_ID_PATTERN = re.compile(r"^[a-f0-9]{16}$")
 
@@ -336,6 +338,43 @@ def validate_source_registry(registry, schema, queue):
     return errors, len(sources)
 
 
+
+def validate_document_versions(history, schema, register):
+    """Validate append-only version records and their document links."""
+    errors = schema_errors(history, schema, "document_versions")
+    if not isinstance(history, dict):
+        return errors, 0
+    documents = {item.get("document_id"): item for item in register.get("documents", []) if isinstance(item, dict)}
+    seen_version_ids = set()
+    seen_hashes = set()
+    by_document = {}
+    for version in history.get("versions", []):
+        if not isinstance(version, dict):
+            continue
+        version_id = version.get("version_id")
+        checksum = version.get("checksum_sha256")
+        document_id = version.get("document_id")
+        if version_id in seen_version_ids:
+            errors.append(f"Duplicate version_id: {version_id}")
+        seen_version_ids.add(version_id)
+        if checksum in seen_hashes:
+            errors.append(f"Duplicate checksum in version history: {checksum}")
+        seen_hashes.add(checksum)
+        if document_id not in documents:
+            errors.append(f"Version {version_id} references unknown document_id '{document_id}'.")
+        by_document.setdefault(document_id, []).append(version)
+    for document_id, versions in by_document.items():
+        versions.sort(key=lambda item: item.get("version_number", 0))
+        previous = None
+        for expected_number, version in enumerate(versions, start=1):
+            if version.get("version_number") != expected_number:
+                errors.append(f"Document {document_id}: version numbers must be sequential starting at 1.")
+            if version.get("previous_version_id") != previous:
+                errors.append(f"Document {document_id}: broken previous_version_id chain at version {version.get('version_number')}.")
+            previous = version.get("version_id")
+    return errors, len(history.get("versions", []))
+
+
 def main():
     """Run validation for all three legal registers."""
     all_errors = []
@@ -351,6 +390,8 @@ def main():
         review_queue_schema = load_json(REVIEW_QUEUE_SCHEMA)
         source_registry = load_yaml(SOURCE_REGISTRY)
         source_registry_schema = load_json(SOURCE_REGISTRY_SCHEMA)
+        version_history = load_json(VERSION_HISTORY)
+        version_history_schema = load_json(VERSION_HISTORY_SCHEMA)
 
         document_errors, document_count = validate_documents(
             document_register,
@@ -371,11 +412,15 @@ def main():
             source_registry_schema,
             review_queue,
         )
+        version_errors, version_count = validate_document_versions(
+            version_history, version_history_schema, document_register
+        )
 
         all_errors.extend(document_errors)
         all_errors.extend(resource_errors)
         all_errors.extend(queue_errors)
         all_errors.extend(source_errors)
+        all_errors.extend(version_errors)
 
     except ValueError as exc:
         print(f"VALIDATION ERROR: {exc}")
@@ -397,6 +442,7 @@ def main():
     print(f"Legal resources catalogue: {resource_count} resource(s).")
     print(f"Legal resource review queue: {candidate_count} candidate(s).")
     print(f"Discovery source registry: {source_count} source(s).")
+    print(f"Document version history: {version_count} version(s).")
     print("All three JSON structures passed schema validation.")
     print("Metadata consistency checks passed.")
     print(
