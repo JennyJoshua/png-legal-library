@@ -8,6 +8,7 @@ from datetime import date
 from pathlib import Path
 
 from jsonschema import Draft202012Validator, FormatChecker
+import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -21,6 +22,8 @@ REVIEW_QUEUE = ROOT / "data" / "legal-resource-review-queue.json"
 REVIEW_QUEUE_SCHEMA = (
     ROOT / "schemas" / "legal-resource-review-queue.schema.json"
 )
+SOURCE_REGISTRY = ROOT / "sources" / "discovery-sources.yml"
+SOURCE_REGISTRY_SCHEMA = ROOT / "schemas" / "source-registry.schema.json"
 
 CANDIDATE_ID_PATTERN = re.compile(r"^[a-f0-9]{16}$")
 
@@ -286,6 +289,53 @@ def validate_review_queue(queue, schema):
     return errors, len(candidates)
 
 
+
+def load_yaml(path):
+    """Load YAML safely and provide readable errors."""
+    try:
+        with path.open("r", encoding="utf-8") as file:
+            return yaml.safe_load(file)
+    except FileNotFoundError as exc:
+        raise ValueError(
+            f"Required file not found: {path.relative_to(ROOT)}"
+        ) from exc
+    except yaml.YAMLError as exc:
+        raise ValueError(
+            f"Invalid YAML in {path.relative_to(ROOT)}: {exc}"
+        ) from exc
+
+
+def validate_source_registry(registry, schema, queue):
+    """Validate source governance and candidate-to-source provenance."""
+    errors = schema_errors(registry, schema, "source_registry")
+    if not isinstance(registry, dict):
+        return errors, 0
+    sources = registry.get("sources", [])
+    source_ids = set()
+    for source in sources:
+        if not isinstance(source, dict):
+            continue
+        source_id = source.get("source_id")
+        if source_id in source_ids:
+            errors.append(f"Duplicate source_id in source registry: {source_id}")
+        source_ids.add(source_id)
+    for index, candidate in enumerate(queue.get("candidates", [])):
+        if not isinstance(candidate, dict):
+            continue
+        source_id = candidate.get("source_id")
+        if source_id and source_id not in source_ids:
+            errors.append(
+                f"Candidate {candidate.get('candidate_id', index)} references "
+                f"unknown source_id '{source_id}'."
+            )
+    rules = registry.get("discovery_rules", {})
+    if isinstance(rules, dict) and rules.get("automatic_legal_status_changes") is not False:
+        errors.append("Source registry must disable automatic legal-status changes.")
+    if isinstance(rules, dict) and rules.get("automatic_redistribution_approval") is not False:
+        errors.append("Source registry must disable automatic redistribution approval.")
+    return errors, len(sources)
+
+
 def main():
     """Run validation for all three legal registers."""
     all_errors = []
@@ -299,6 +349,8 @@ def main():
 
         review_queue = load_json(REVIEW_QUEUE)
         review_queue_schema = load_json(REVIEW_QUEUE_SCHEMA)
+        source_registry = load_yaml(SOURCE_REGISTRY)
+        source_registry_schema = load_json(SOURCE_REGISTRY_SCHEMA)
 
         document_errors, document_count = validate_documents(
             document_register,
@@ -314,10 +366,16 @@ def main():
             review_queue,
             review_queue_schema,
         )
+        source_errors, source_count = validate_source_registry(
+            source_registry,
+            source_registry_schema,
+            review_queue,
+        )
 
         all_errors.extend(document_errors)
         all_errors.extend(resource_errors)
         all_errors.extend(queue_errors)
+        all_errors.extend(source_errors)
 
     except ValueError as exc:
         print(f"VALIDATION ERROR: {exc}")
@@ -338,6 +396,7 @@ def main():
     print(f"Document register: {document_count} record(s).")
     print(f"Legal resources catalogue: {resource_count} resource(s).")
     print(f"Legal resource review queue: {candidate_count} candidate(s).")
+    print(f"Discovery source registry: {source_count} source(s).")
     print("All three JSON structures passed schema validation.")
     print("Metadata consistency checks passed.")
     print(
