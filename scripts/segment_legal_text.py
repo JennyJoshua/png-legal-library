@@ -25,7 +25,8 @@ def segment_text(text, source_reference, document_id, version_id, start_id=1):
         if current and current["text"].strip():
             current["text"] = current["text"].strip()
             current["character_count"] = len(current["text"])
-            current["structure_path"] = [x for x in (context["part"], context["division"], context["subpart"], context["section"]) if x]
+            # Capture the hierarchy when the node starts. The live context may
+            # already point at the next section when flush() is called.
             nodes.append(current)
         current = None
 
@@ -35,7 +36,8 @@ def segment_text(text, source_reference, document_id, version_id, start_id=1):
         current = {"node_id": f"{version_id}-{next_id:06d}", "document_id": document_id,
                    "version_id": version_id, "kind": kind, "number": number, "title": "",
                    "text": content.strip(), "source_reference": source_reference,
-                   "page_number": None, "paragraph_number": None, "structure_path": []}
+                   "page_number": None, "paragraph_number": None,
+                   "structure_path": [dict(x) for x in (context["part"], context["division"], context["subpart"], context["section"]) if x]}
         page = re.search(r"PDF page (\d+)", source_reference)
         para = re.search(r"DOCX paragraph (\d+)", source_reference)
         if page: current["page_number"] = int(page.group(1))
