@@ -7,6 +7,7 @@ on:
       - phase3/document-processing
       - phase4/segmentation-and-search
       - phase9/security-legal-safeguards
+      - phase10/legal-corpus-foundation
     paths:
       - 'data/documents.json'
       - 'data/document-versions.json'
@@ -43,6 +44,9 @@ on:
       - 'tests/test_legal_qa.py'
       - 'tests/test_static_portal.py'
       - 'docs/security-and-legal-safeguards.md'
+      - 'docs/constitutional-amendment-register.md'
+      - 'docs/legal-source-review-register.md'
+      - 'docs/legal-corpus-foundation.md'
       - 'docs/legal-library-portal.md'
       - 'docs/legal-qa-citations.md'
       - 'docs/legal-research-agent.md'
