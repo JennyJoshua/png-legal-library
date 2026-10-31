@@ -17,3 +17,7 @@ The page must load a valid index, reject unsupported structures, search all/any 
 
 ## Legal warning
 Search results are navigation aids only. The portal does not establish authenticity, current legal status, amendments, commencement or legal effect. Verify the authoritative current original. Not legal advice.
+
+
+## Link safety
+Recorded source links are opened only when their URL scheme is HTTP or HTTPS. Other schemes are not rendered as clickable links. Source text and metadata are escaped before display.
