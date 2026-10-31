@@ -61,6 +61,20 @@ sources:
     discovery_scope: [law_reform_reports, constitutional_review, organic_law_review, law_reform_recommendations]
     review_status: candidate
     redistribution_permission: unknown
+  - source_id: png_dplga
+    name: Department of Provincial and Local Government Affairs — Acts and Legislations
+    url: https://www.dplga.gov.pg/document-management-system-acts-and-legislations/
+    source_type: official_government
+    discovery_scope: [provincial_government_law, local_level_government_law, district_development_authority_law, land_law, public_service_law, public_finance_law]
+    review_status: candidate
+    redistribution_permission: unknown
+  - source_id: png_pngeiti
+    name: Papua New Guinea Extractive Industries Transparency Initiative — applicable legislation list
+    url: https://www.pngeiti.org.pg/legislation/
+    source_type: legal_information_service
+    discovery_scope: [extractive_sector_acts, company_law, taxation_law, public_finance_law, natural_resource_law]
+    review_status: needs_verification
+    redistribution_permission: unknown
   - source_id: pngiportal_gazette_archive
     name: PNGi Portal National Gazette archive
     url: https://pngiportal.org/
