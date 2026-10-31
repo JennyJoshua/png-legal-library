@@ -9,6 +9,9 @@ ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location("intake_document", ROOT / "scripts" / "intake_document.py")
 intake = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(intake)
+VALIDATOR_SPEC = importlib.util.spec_from_file_location("validator", ROOT / "scripts" / "validate_documents.py")
+validator = importlib.util.module_from_spec(VALIDATOR_SPEC)
+VALIDATOR_SPEC.loader.exec_module(validator)
 
 class DocumentIntakeTests(unittest.TestCase):
     def setUp(self):
@@ -118,6 +121,53 @@ class DocumentIntakeTests(unittest.TestCase):
         args.file = str(link)
         with self.assertRaisesRegex(ValueError, "symlink"):
             intake.intake(args)
+
+
+class DocumentVersionValidationTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.schema = validator.load_json(ROOT / "schemas" / "document-versions.schema.json")
+
+    def version(self, number, version_id, checksum, previous=None, document_id="sample-act"):
+        return {
+            "version_id": version_id, "document_id": document_id,
+            "version_number": number, "checksum_sha256": checksum * 64,
+            "file_name": "sample.pdf", "file_size_bytes": 20,
+            "media_type": "application/pdf", "source_url": "https://parliament.gov.pg/sample",
+            "source_id": "png_parliament", "observed_at": "2026-10-31T00:00:00Z",
+            "previous_version_id": previous, "review_status": "pending_review",
+            "redistribution_permission": "unknown", "archived_path": None
+        }
+
+    def test_valid_sequential_history_passes(self):
+        first = self.version(1, "1111111111111111", "a", None)
+        second = self.version(2, "2222222222222222", "b", first["version_id"])
+        history = {"history_version": "1.0", "jurisdiction": "Papua New Guinea", "versions": [first, second]}
+        register = {"documents": [{"document_id": "sample-act"}]}
+        errors, count = validator.validate_document_versions(history, self.schema, register)
+        self.assertEqual(errors, [])
+        self.assertEqual(count, 2)
+
+    def test_broken_previous_version_link_is_rejected(self):
+        first = self.version(1, "1111111111111111", "a", None)
+        second = self.version(2, "2222222222222222", "b", "3333333333333333")
+        history = {"history_version": "1.0", "jurisdiction": "Papua New Guinea", "versions": [first, second]}
+        errors, _ = validator.validate_document_versions(history, self.schema, {"documents": [{"document_id": "sample-act"}]})
+        self.assertTrue(any("broken previous_version_id" in error for error in errors))
+
+    def test_version_must_reference_existing_document(self):
+        version = self.version(1, "1111111111111111", "a")
+        history = {"history_version": "1.0", "jurisdiction": "Papua New Guinea", "versions": [version]}
+        errors, _ = validator.validate_document_versions(history, self.schema, {"documents": []})
+        self.assertTrue(any("unknown document_id" in error for error in errors))
+
+    def test_duplicate_hash_is_rejected(self):
+        first = self.version(1, "1111111111111111", "a", None)
+        second = self.version(2, "2222222222222222", "a", first["version_id"])
+        history = {"history_version": "1.0", "jurisdiction": "Papua New Guinea", "versions": [first, second]}
+        errors, _ = validator.validate_document_versions(history, self.schema, {"documents": [{"document_id": "sample-act"}]})
+        self.assertTrue(any("Duplicate checksum" in error for error in errors))
+
 
 if __name__ == "__main__":
     unittest.main()

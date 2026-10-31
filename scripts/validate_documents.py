@@ -376,7 +376,7 @@ def validate_document_versions(history, schema, register):
 
 
 def main():
-    """Run validation for all three legal registers."""
+    """Run validation for all legal registers and source/version records."""
     all_errors = []
 
     try:
@@ -443,7 +443,7 @@ def main():
     print(f"Legal resource review queue: {candidate_count} candidate(s).")
     print(f"Discovery source registry: {source_count} source(s).")
     print(f"Document version history: {version_count} version(s).")
-    print("All three JSON structures passed schema validation.")
+    print("All legal register, source registry, and version-history structures passed validation.")
     print("Metadata consistency checks passed.")
     print(
         "Reminder: automated validation does not establish legal "
