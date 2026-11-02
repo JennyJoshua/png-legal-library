@@ -75,6 +75,13 @@ sources:
     discovery_scope: [extractive_sector_acts, company_law, taxation_law, public_finance_law, natural_resource_law]
     review_status: needs_verification
     redistribution_permission: unknown
+  - source_id: png_nefc
+    name: National Economic and Fiscal Commission
+    url: https://www.nefc.gov.pg/legislation/
+    source_type: independent_constitutional_advisory_body
+    discovery_scope: [organic_laws, provincial_government_acts, local_level_government_acts, public_finance_law, intergovernmental_fiscal_law]
+    review_status: candidate
+    redistribution_permission: unknown
   - source_id: pngiportal_gazette_archive
     name: PNGi Portal National Gazette archive
     url: https://pngiportal.org/
