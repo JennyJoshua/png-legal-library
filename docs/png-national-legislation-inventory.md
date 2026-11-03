@@ -1,4 +1,4 @@
-# PNG National Legislation Inventory — Verification Update
+# PNG National Legislation Inventory — Gazette and Amendment Verification Update
 
 **Review date:** 3 November 2026  
 **Branch:** `phase10/legal-corpus-foundation`  
@@ -6,83 +6,116 @@
 
 ## Executive result
 
-This update resolves one significant commencement question and identifies an important Organic Law numbering/version issue.
+This update resolves an important earlier identification error and records the latest reliable evidence located.
 
-- **District Development Authority (Amendment) Act 2021, No. 14 of 2021:** commencement is established by National Gazette No. G80. The notice was published on 4 February 2022 and fixed 1 January 2022 as the commencement date. This supersedes the older vLex snapshot warning that the amendment had not yet commenced.
-- **District Development Authority (Amendment) Acts 2015 No.37 and 2016 No.11:** PacLII's PNG legislation index, updated 14 April 2022, lists both as N.I.F. (not in force) at that date. No later commencement notice has been established in this pass. Do not treat the 2022 index as proof of their status in November 2026.
-- **Organic Law:** the Ombudsman Commission-hosted text is labelled No.29 of 1998 and has a blank certification date. Separately, PacLII provides a consolidation dated 1 December 2014 of the Organic Law on Provincial Governments and Local-level Governments. National Gazette No. G712 (21 October 2021) contains a commencement notice for the Organic Law on Provincial Governments and Local-level Governments 1995, No.16 of 1995, specifically fixing commencement for the National Capital District. These records must not be assumed to describe the same edition or instrument without reconciliation.
+1. **Principal Organic Law:** PacLII's PNG laws index identifies the principal instrument as the Organic Law on Provincial Governments and Local-level Governments, **No. 16 of 1995**, not No. 29 of 1998.
+2. **No. 29 of 1998:** The same index separately identifies this as the **Organic Law Amendment No. 7 Law 1998**. The Ombudsman Commission's hosted page labels the displayed principal text “No. 29 of 1998”; this appears to be a numbering/metadata conflation. The page's blank certification field is an additional reason not to treat it as the definitive principal-law citation.
+3. **DDA Amendment 2021 No.14:** Commencement is recorded as 1 January 2022 under National Gazette G80/2022.
+4. **DDA Amendment 2015 No.37 and 2016 No.11:** PacLII's 14 April 2022 index marks both N.I.F. (not in force) at that date. No later commencement notice was established in this review. Do not state their status in 2026 as settled.
+5. **DDA law reform:** CLRC announced on 13 August 2026 that it had launched a nationwide review of DDA laws under TOR No.26. This is a law-reform process, not an enacted amendment.
 
-## 1. District Development Authority Act 2014 — No. 40 of 2014
+## 1. Organic Law: correct principal identity and amendment register
 
-The Act is identified in the DPLGA official-copy PDF. PacLII's legislation index updated 14 April 2022 lists its commencement date as **1 January 2015**.
+### Principal instrument
 
-The same index gives the following amendment table:
+PacLII's index updated 14 April 2022 records:
 
-| Amendment | Index status / date | Current assessment |
-|---|---|---|
-| District Development Authority (Amendment) Act 2015, No.37 | N.I.F. as at 14 April 2022 | Later status not established; remain unknown |
-| District Development Authority (Amendment) Act 2016, No.11 | N.I.F. as at 14 April 2022 | Later status not established; remain unknown |
-| District Development Authority (Amendment) Act 2021, No.14 | 1 January 2022; cites G80/2022 | Commencement confirmed by Gazette |
+- Organic Law on Provincial Governments and Local-level Governments;
+- No. 16 of 1995;
+- commencement 19 July 1995;
+- for Bougainville, commencement 1 January 1999;
+- for the National Capital District, commencement 21 October 2021 under Gazette G712/2021.
 
-### 2021 amendment — commencement evidence
+The Ombudsman Commission webpage displays “No. 29 of 1998” above a text of the Organic Law. However, PacLII separately lists No. 29/1998 as Amendment No.7. The best present explanation is that the Ombudsman page has displayed an amendment number as if it were the principal instrument number. This is a strong reconciliation lead, but final confirmation should come from the certified original and OLC.
 
-National Gazette No. G80, Port Moresby, Friday 4 February 2022, contains a “Notice of Commencement”. Its schedule expressly lists:
+### Amendments listed by PacLII
 
-- No. 13 of 2021 — National Procurement (Amendment) Act 2021;
-- **No. 14 of 2021 — District Development Authority (Amendment) Act 2021**; and
-- No. 15 of 2021 — Public Finances (Management) (Amendment) Act 2021.
+The index provides the following amendment chain. Dates and numbers below are transcribed from that index; anomalies must be checked against original instruments and Gazette notices.
 
-The notice fixes **1 January 2022** as the date on which the listed Acts came into operation. Thus the DDA Amendment 2021 was certified in Gazette No. G749 on 4 November 2021 and later commenced on 1 January 2022 under G80/2022. The Gazette issue's publication date is not the commencement date.
+| Amendment | Number/year in index | Index commencement |
+|---|---:|---|
+| Amendment No.1 Law 1995 | Number not clearly shown in extracted index | Requires primary verification |
+| Amendment No.2 Law 1996 | 22/1996 | 18 September 1996 |
+| Amendment No.3 Law 1996 | 23/1996 | 18 September 1996 |
+| Amendment No.4 Law 1997 | 8/1997 | 18 June 1997 |
+| Amendment No.5 Law 1997 | 31/1997 | 19 January 1998 |
+| Amendment No.6 Law 1998 | 28/1998 | Index displays 1 January 1998 — anomalous; verify |
+| Amendment No.7 Law 1998 | 29/1998 | Index displays 1 January 1998 — anomalous; verify |
+| Amendment No.8 Law 2003 | 2003 | 11 August 2003 |
+| Amendment No.9 Law 2003 | 2003 | Index displays 18 June 1997 — anomalous; verify |
+| Amendment No.10 Law 2006 | 2006 | 30 January 2007 |
+| Amendment No.11 Law 2007 | 2007 | Index displays 18 December 2006 — verify |
+| Amendment No.12 Law 2008 | 2008 | Section-specific deemed dates spanning 2004, 2008 and 2009 |
+| District Development Authority Amendment Law 2014 | 2014 | 21 March 2014 |
 
-**Decision:** The 2021 amendment's commencement is established. The 2015 and 2016 amendments remain unresolved after the 14 April 2022 “N.I.F.” index entry. The principal Act's current consolidated state through November 2026 is not yet certified.
+This is a discovery-level amendment register, not a certified consolidated legal history. The index itself contains apparent date inconsistencies, so the repository now records each amendment as a separate evidence lead and leaves legal status unknown.
+
+### Gazette G712/2021
+
+PacLII's index states that the principal 1995 Organic Law commenced in relation to the National Capital District on 21 October 2021, citing G712/2021. This is distinct from the original commencement date for other provinces and the special Bougainville commencement date. The Gazette notice should be retained as separate evidence.
 
 Sources:
+- [PacLII PNG laws index, updated 14 April 2022](https://www.paclii.org/pg/indices/legis/pnglaws-april2022.pdf)
+- [Ombudsman Commission hosted Organic Law page](https://www.ombudsman.gov.pg/legislation/organic-law-on-provincial-governments-llgs/)
+- [National Gazette G712/2021 archive](https://pngiportal.org/directory/national-gazette-g680-720-2021)
+- [PacLII 2014 consolidation](https://www.paclii.org/pg/legis/consol_act/olopgalg2014616.pdf)
+
+## 2. District Development Authority Act and amendments
+
+PacLII's index updated 14 April 2022 records the following:
+
+| Instrument | Number | Index commencement/status |
+|---|---:|---|
+| District Development Authority Act 2014 | 40/2014 | 1 January 2015 |
+| District Development Authority (Amendment) Act 2015 | 37/2015 | N.I.F. as at 14 April 2022 |
+| District Development Authority (Amendment) Act 2016 | 11/2016 | N.I.F. as at 14 April 2022 |
+| District Development Authority (Amendment) Act 2021 | 14/2021 | 1 January 2022; cites G80/2022 |
+
+### 2021 amendment
+
+The previous verification established that National Gazette G80, published 4 February 2022, contains a notice fixing 1 January 2022 as commencement for the 2021 amendment. The PacLII index corroborates this.
+
+### 2015 amendment — identifier discrepancy
+
+PacLII identifies the DDA Amendment Act 2015 as **No. 37 of 2015** and marks it N.I.F. as at 14 April 2022. FAOLEX separately lists a DDA Amendment Act 2015 as **No. 31 of 2015**. This discrepancy has not been resolved. The original parliamentary and Gazette copies must be compared before the repository assigns a definitive identifier or commencement status.
+
+### 2016 amendment
+
+PacLII identifies No. 11 of 2016 and records N.I.F. as at 14 April 2022. No later commencement notice was established in this pass. Its current status remains unknown.
+
+### Current law reform
+
+On 13 August 2026, the Constitutional and Law Reform Commission announced launch of the Issues Paper for Terms of Reference No.26 — Review of the Laws Relating to District Development Authorities. CLRC says the TOR was endorsed and gazetted by the Minister early in 2026 and that the review is intended to assess the DDA legislative framework and recommend reforms.
+
+This is significant evidence that the framework is under active review. It does not itself amend the law or prove any proposed change has been enacted. The gazetted TOR, Issues Paper, consultation record and final report should be tracked separately.
+
+Sources:
+- [PacLII PNG laws index, updated 14 April 2022](https://www.paclii.org/pg/indices/legis/pnglaws-april2022.pdf)
 - [DPLGA official-copy DDA Act 2014](https://www.dplga.gov.pg/wp-content/uploads/2022/06/DistrictDevelopmentAuthorityAct.pdf)
-- [PacLII PNG legislation index, updated 14 April 2022](https://www.paclii.org/pg/indices/legis/pnglaws-april2022.pdf)
-- [National Gazette G749 — certification of Acts, including No.14 of 2021](https://pngiportal.org/directory/national-gazette-g721-750-2021)
-- [National Gazette G80 — commencement notice](https://pngiportal.org/directory/national-gazette-g61-101-2022)
+- [National Gazette G80/2022 archive](https://pngiportal.org/directory/national-gazette-g61-101-2022)
+- [FAOLEX DDA Amendment Act 2015 listing](https://www.ecolex.org/details/legislation/district-development-authority-amendment-act-2015-no-31-of-2015-lex-faoc155760/)
+- [CLRC DDA laws review announcement, 13 August 2026](https://clrc.gov.pg/index.php/2026/08/13/clrc-launches-review-of-laws-relating-to-the-district-development-authorities-in-papua-new-guinea/)
 
-## 2. Organic Law — identity and commencement reconciliation
+## 3. Repository record changes
 
-### What is established
+The review queue has been expanded to include:
+- corrected principal Organic Law identity (No.16/1995);
+- separate amendment leads for Organic Law Amendments Nos.1–12;
+- separate DDA Amendment 2015 No.37 and unresolved No.31 conflict;
+- DDA Amendment 2016 No.11;
+- the CLRC TOR No.26 law-reform review lead;
+- explicit warnings about dated index status and anomalous commencement dates.
 
-1. The Ombudsman Commission page labels its hosted text **Organic Law on Provincial Governments and Local-level Governments, No. 29 of 1998**. Its “Certified on” field is blank. The text's commencement clause states commencement on certification for provinces other than Bougainville and NCD; 1 January 1999 for Bougainville; and by Gazette notice for NCD.
-2. PacLII hosts a **Consolidation of Organic Law on Provincial Governments and Local-level Governments dated 1 December 2014**. This is a distinct version record that should be compared against the Ombudsman-hosted copy.
-3. National Gazette No. G712, dated 21 October 2021, contains a notice under the **Organic Law on Provincial Governments and Local-level Governments 1995 (No.16 of 1995)**. It fixes the Gazette publication date as the date that Organic Law comes into operation insofar as it relates to the National Capital District.
-4. PacLII's 2014 consolidation includes the District Development Authority in the administrative system and is linked to the separate 2014 Organic Law (District Development Authority) (Amendment) Law.
+The Organic Law principal record remains `status_unknown`; the DDA principal Act remains `status_unknown`. Only the commencement of DDA Amendment 2021 No.14 is recorded as confirmed in force from 1 January 2022.
 
-### What is not yet established
+## 4. Remaining work before legal approval
 
-- Whether the Ombudsman Commission's No.29 of 1998 label identifies a later consolidated text, a particular amendment, or a numbering error in the webpage/PDF.
-- Whether the 1995 No.16 of 1995 principal Organic Law and the Ombudsman-hosted No.29 of 1998 text have been accurately reconciled in the 2014 consolidation.
-- The original certification evidence for the relevant principal Organic Law and the complete amendment chain.
-- The exact number and Gazette commencement details of the 2014 District Development Authority Organic Law amendment. The PacLII reproduction's number field appears blank in the extracted copy.
+1. Obtain certified principal Organic Law No.16/1995 and its full amendment chain from OLC or official Gazette records.
+2. Verify every Organic Law amendment number/date and resolve anomalies in the PacLII index.
+3. Compare the DDA Amendment 2015 No.31 and No.37 source texts to determine whether one listing is erroneous or they are separate instruments.
+4. Obtain Gazette commencement notices for DDA Amendment 2015 No.37 and 2016 No.11, and check for any later notices after April 2022.
+5. Check for post-2022 amendments to the DDA Act and related Organic Law through 3 November 2026.
+6. Obtain the gazetted TOR No.26 and CLRC Issues Paper; track the eventual report and any subsequent enacted amendments.
+7. Obtain dated official consolidated texts and obtain review by a PNG-qualified legal practitioner before catalogue approval.
 
-**Decision:** Do not call the Ombudsman-hosted No.29/1998 text the definitive current consolidated Organic Law. Keep the candidate at `status_unknown` until OLC or certified parliamentary/Gazette records reconcile the instrument identity and version chain.
-
-Sources:
-- [Ombudsman Commission — hosted Organic Law text](https://www.ombudsman.gov.pg/legislation/organic-law-on-provincial-governments-llgs/)
-- [PacLII — 1 December 2014 Organic Law consolidation](https://www.paclii.org/pg/legis/consol_act/olopgalg2014616.pdf)
-- [National Gazette G712 — NCD commencement notice for 1995 No.16](https://pngiportal.org/directory/national-gazette-g680-720-2021)
-- [PacLII — 2014 District Development Authority Organic Law amendment](https://www.paclii.org/pg/legis/num_act/olopgalgdal20141071.pdf)
-
-## 3. Review queue changes
-
-The machine-readable queue now records:
-- the 2021 DDA amendment as `in_force`, with the exact Gazette-based commencement evidence;
-- the 2015 and 2016 DDA amendments as unresolved, while preserving their “N.I.F.” status as of 14 April 2022;
-- the 2014 Organic Law DDA amendment as a separate instrument;
-- the G80/2022 DDA commencement notice as a separate evidence record;
-- the G712/2021 NCD commencement notice for the 1995 No.16 Organic Law as a separate evidence record;
-- an explicit warning not to conflate the 1995 No.16 instrument, the 2014 consolidation and the Ombudsman-hosted No.29/1998-labelled text.
-
-## Remaining work
-
-1. Obtain OLC-certified master text and amendment table for the Organic Law.
-2. Resolve the No.16 of 1995 / No.29 of 1998 numbering discrepancy.
-3. Obtain the Gazette publication and commencement details for the 2014 Organic Law DDA amendment.
-4. Find any post-April-2022 commencement notices for DDA amendment Acts No.37 of 2015 and No.11 of 2016.
-5. Check all amendments to the DDA Act after No.14 of 2021 through 3 November 2026.
-6. Obtain a dated, official consolidated DDA Act text and professional PNG legal review.
-
-**Decision:** DDA Amendment 2021 commencement is confirmed. Other current-law determinations remain open. No document has been moved into the approved legal catalogue.
+**Decision:** Principal Organic Law numbering is now substantially reconciled: No.16/1995 is the principal instrument; No.29/1998 is separately indexed as Amendment No.7. The DDA 2021 amendment commencement is confirmed. The 2015/2016 DDA amendment current status and current consolidated versions remain unresolved. Do not promote the instruments to the approved legal catalogue yet.
