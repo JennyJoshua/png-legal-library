@@ -129,7 +129,7 @@
       "legal_status": "status_unknown",
       "legal_status_evidence": null,
       "redistribution_permission": "unknown",
-      "reviewer_notes": "IDENTITY RECONCILIATION: PacLII's index updated 14 April 2022 identifies the principal Organic Law as No.16/1995, commenced 19 July 1995 (Bougainville 1 January 1999; NCD 21 October 2021 under G712/2021). The same index separately identifies Organic Law Amendment No.7 Law 29/1998. Ombudsman Commission's hosted page labels its displayed principal text 'No.29 of 1998', which appears to conflate the principal Organic Law with Amendment No.7. Treat Ombudsman page as a hosted consolidation copy, not the principal law's enactment identifier, until OLC/certified copy confirms. PacLII index lists amendments No.1 (1995), Nos.2-3 (1996), Nos.4-5 (1997), Nos.6-7 (1998), Nos.8-9 (2003), No.10 (2006), No.11 (2007), No.12 (2008), and DDA amendment (2014). The index has anomalies (e.g. No.6/1998 commencement appears 1 Jan 1998); confirm each against Gazette. Current post-2022 amendment status remains to be checked. Keep legal_status status_unknown."
+      "reviewer_notes": "IDENTITY: PacLII index updated 14 April 2022 identifies principal Organic Law as No.16/1995, commenced 19 July 1995 (Bougainville 1 Jan 1999; NCD commencement originally gazetted 21 Oct 2021 under G712/2021). It separately identifies No.29/1998 as Amendment No.7. Ombudsman Commission webpage labels hosted text 'No.29 of 1998', likely conflating principal instrument and amendment number. IMPORTANT NCD UPDATE: G215/2023 corrigendum purported to defer NCD commencement until later of corrigendum publication or repeal of NCDC Act 2001. A National Court interlocutory ruling in Hanenamo Development Ltd v NCDC & Independent State of PNG, N11736 (24 Feb 2026), is reported as holding the corrigendum void ab initio because not authorised by the Organic Law or Interpretation Act. This strongly supports original G712 notice not being displaced, but obtain official judgment, confirm procedural/finality/appeal status before setting legal status. Keep status_unknown until legal review."
     },
     {
       "candidate_id": "c0a0000000000011",
@@ -569,7 +569,7 @@
       "legal_status": "not_applicable",
       "legal_status_evidence": null,
       "redistribution_permission": "unknown",
-      "reviewer_notes": "National Gazette No. G712, dated 21 October 2021, page 17 in the archive extract, gives notice under Organic Law on Provincial Governments and Local-level Governments 1995 (No.16 of 1995) fixing the date of Gazette publication as commencement for NCD. This does not establish that the Ombudsman-hosted text labelled No.29 of 1998 is the same instrument or version. Preserve the identity distinction pending legal reconciliation."
+      "reviewer_notes": "G712/2021 published 21 October 2021 contains original Notice of Commencement for Organic Law on Provincial Governments and Local-level Governments 1995 (No.16 of 1995) in relation to NCD, fixing publication date 21 October 2021. A later corrigendum in G215/2023 attempted to defer commencement; National Court interlocutory ruling N11736 (Hanenamo Development Ltd v NCDC & Independent State of PNG, 24 Feb 2026) is reported as holding the corrigendum void ab initio. Obtain certified judgment and verify appeal/finality. Do not treat the corrigendum as effective without considering this ruling."
     },
     {
       "candidate_id": "c0a0000000000030",
@@ -856,6 +856,28 @@
       "legal_status_evidence": null,
       "redistribution_permission": "unknown",
       "reviewer_notes": "CLRC announced on 13 August 2026 that it launched the Issues Paper for TOR No.26, a nationwide review of DDA laws. CLRC states TOR 26 was endorsed and gazetted by the Minister early in 2026 and that the review will examine current DDA enabling laws and recommend reforms. This is a law-reform process, not enacted amendment. Obtain gazetted TOR and Issues Paper, track consultation and final report; do not infer legal changes from recommendations."
+    },
+    {
+      "candidate_id": "c0a000000000003d",
+      "url": "https://vlex.com/vid/hanenamo-development-limited-v-1118871987",
+      "title": "Hanenamo Development Limited v National Capital District Commission and Independent State of PNG — N11736 (24 February 2026)",
+      "available_date": "2026-02-24",
+      "discovery_method": "2026 National Court decision surfaced in legal database search",
+      "candidate_type": "court_judgment",
+      "source_id": "vlex_png",
+      "source_name": "vLex Papua New Guinea legal database",
+      "source_url": "https://vlex.com/vid/hanenamo-development-limited-v-1118871987",
+      "source_type": "legal_information_service",
+      "source_review_status": "needs_verification",
+      "technical_access": "accessible_html",
+      "http_status": null,
+      "access_error": null,
+      "review_status": "needs_more_evidence",
+      "jurisdiction": "Papua New Guinea",
+      "legal_status": "not_applicable",
+      "legal_status_evidence": null,
+      "redistribution_permission": "unknown",
+      "reviewer_notes": "Secondary database report identifies National Court interlocutory ruling N11736, judgment dated 24 February 2026 (hearing/facts 4 December 2025), on whether G215/2023 corrigendum could alter G712/2021 Organic Law commencement in NCD. Reported holding: fixing date is delegated law-making under the Organic Law; corrigendum void ab initio because not authorised by Organic Law or Interpretation Act ss89–90. Obtain official signed judgment from National Court registry/PacLII; verify exact orders, whether appeal/review filed or decided, and precedential scope before relying on it as definitive. This is court evidence, not an amendment to the Organic Law."
     }
   ],
   "usage_notes": [
@@ -870,6 +892,7 @@
     "A source-authority review candidate is not itself legislation.",
     "Amendment database statements about commencement are time-bounded secondary evidence. Confirm current legal effect from the original Act and Gazette commencement notice.",
     "When recording commencement, capture the Gazette issue, publication date, page, named instrument and the actual commencement date separately; the Gazette publication date and commencement date may differ.",
-    "Organic Law number reconciliation: principal Organic Law is indexed as No.16/1995; No.29/1998 is separately indexed as Amendment No.7 Law. Do not assign No.29/1998 to the principal Organic Law without certified source evidence."
+    "Organic Law number reconciliation: principal Organic Law is indexed as No.16/1995; No.29/1998 is separately indexed as Amendment No.7 Law. Do not assign No.29/1998 to the principal Organic Law without certified source evidence.",
+    "Do not evaluate Gazette G215/2023 corrigendum in isolation: record National Court ruling N11736 (24 February 2026) reportedly holding it void ab initio, and verify official judgment and appeal status."
   ]
 }
