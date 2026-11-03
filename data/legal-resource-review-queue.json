@@ -2,7 +2,7 @@
   "queue_version": "1.0",
   "jurisdiction": "Papua New Guinea",
   "description": "Human-review queue for PNG legal material discovery and document verification. Queue entries are leads, not verified legal instruments.",
-  "last_updated": "2026-11-02",
+  "last_updated": "2026-11-03",
   "review_policy": {
     "automatic_approval": false,
     "automatic_legal_status_changes": false,
@@ -112,7 +112,7 @@
     {
       "candidate_id": "c0a0000000000010",
       "url": "https://www.ombudsman.gov.pg/legislation/organic-law-on-provincial-governments-llgs/",
-      "title": "Organic Law on Provincial Governments and Local-level Governments — No. 29 of 1998",
+      "title": "Organic Law on Provincial Governments and Local-level Governments — Ombudsman-hosted text labelled No. 29 of 1998 (identity reconciliation required)",
       "available_date": null,
       "discovery_method": "official Ombudsman Commission legislation page and DPLGA official copy",
       "candidate_type": "organic_law",
@@ -129,7 +129,7 @@
       "legal_status": "status_unknown",
       "legal_status_evidence": null,
       "redistribution_permission": "unknown",
-      "reviewer_notes": "IDENTITY CONFIRMED: Ombudsman Commission page identifies Organic Law on Provincial Governments and Local-level Governments, No. 29 of 1998. DPLGA hosts an official-copy PDF. The displayed certified-on date is blank. The commencement clause provides commencement on certification for provinces other than Bougainville and NCD, 1 January 1999 for Bougainville, and by Gazette notice for NCD. The text includes amendment footnotes and an Organic Law (District Development Authority) (Amendment) Law 2014 is separately discoverable. Exact complete amendment history, certification evidence for general commencement, NCD Gazette notice and current consolidated text remain unverified. Keep legal_status status_unknown."
+      "reviewer_notes": "IMPORTANT IDENTITY/NUMBER DISCREPANCY: Ombudsman Commission's hosted text labels the instrument No. 29 of 1998 and displays a blank 'Certified on' field. PacLII separately provides a 1 December 2014 consolidation of the Organic Law on Provincial Governments and Local-level Governments, while a National Gazette notice G712 (21 October 2021) concerns the Organic Law on Provincial Governments and Local-level Governments 1995 (No. 16 of 1995) and fixes commencement for NCD on publication. Do not assume these are interchangeable versions or that G712 proves commencement of the Ombudsman-hosted No.29/1998 text. Reconcile the principal Organic Law, amendment number and consolidated text with certified parliamentary records and Gazette. The 2014 District Development Authority amendment is a separate amendment instrument. Keep legal_status status_unknown."
     },
     {
       "candidate_id": "c0a0000000000011",
@@ -195,7 +195,7 @@
       "legal_status": "status_unknown",
       "legal_status_evidence": null,
       "redistribution_permission": "unknown",
-      "reviewer_notes": "IDENTITY CONFIRMED: DPLGA-hosted official-copy PDF identifies District Development Authority Act 2014, No. 40 of 2014. vLex reports commencement 1 January 2015 and lists amendment Acts No. 37 of 2015, No. 11 of 2016 and No. 14 of 2021, while noting they were not commenced as at that database edition. The 2021 amendment text appears to substitute section 1. Verify each amendment's Gazette publication and commencement independently. No current consolidated primary text established. Keep legal_status status_unknown."
+      "reviewer_notes": "IDENTITY CONFIRMED: DPLGA-hosted official-copy PDF identifies District Development Authority Act 2014, No. 40 of 2014. PacLII's PNG legislation index updated 14 April 2022 lists commencement 1 January 2015. The same index marks the 2015 No.37 and 2016 No.11 amendment Acts N.I.F. (not in force) as at that index date. It lists the 2021 No.14 amendment as commencing 1 January 2022, with Gazette G80/2022. This resolves the older vLex warning for the 2021 amendment: that warning is stale. Still check for post-2022 amendments and obtain a dated official consolidated text before declaring the principal Act current as at 2026. Keep the principal Act legal_status status_unknown."
     },
     {
       "candidate_id": "c0a0000000000014",
@@ -459,7 +459,7 @@
       "legal_status": "status_unknown",
       "legal_status_evidence": null,
       "redistribution_permission": "unknown",
-      "reviewer_notes": "Secondary database lists this amendment and says not commenced as at its snapshot. Verify primary instrument and commencement notice."
+      "reviewer_notes": "PacLII's PNG legislation index updated 14 April 2022 lists District Development Authority (Amendment) Act 2015, No.37 of 2015, with commencement N.I.F. (not in force) in that edition. This is a dated index entry, not proof of status after 14 April 2022. Search for later commencement notices and primary Gazette evidence. Keep legal_status status_unknown."
     },
     {
       "candidate_id": "c0a0000000000023",
@@ -481,18 +481,18 @@
       "legal_status": "status_unknown",
       "legal_status_evidence": null,
       "redistribution_permission": "unknown",
-      "reviewer_notes": "Secondary database lists this amendment and says not commenced as at its snapshot. Verify primary instrument and commencement notice."
+      "reviewer_notes": "PacLII's PNG legislation index updated 14 April 2022 lists District Development Authority (Amendment) Act 2016, No.11 of 2016, with commencement N.I.F. (not in force) in that edition. This is a dated index entry, not proof of status after 14 April 2022. Search for later commencement notices and primary Gazette evidence. Keep legal_status status_unknown."
     },
     {
       "candidate_id": "c0a0000000000024",
-      "url": "https://www.paclii.org/pg/legis/num_act/ddaa202114o2021414/",
+      "url": "https://pngiportal.org/directory/national-gazette-g61-101-2022",
       "title": "District Development Authority (Amendment) Act 2021 — No. 14 of 2021",
       "available_date": null,
       "discovery_method": "legislation amendment cross-reference",
       "candidate_type": "amendment_act",
-      "source_id": "png_nefc",
-      "source_name": "National Economic and Fiscal Commission / PacLII discovery",
-      "source_url": "https://www.nefc.gov.pg/legislation/",
+      "source_id": "pngiportal_gazette_archive",
+      "source_name": "PNGi Portal National Gazette archive",
+      "source_url": "https://pngiportal.org/directory/national-gazette-g61-101-2022",
       "source_type": "legal_information_service",
       "source_review_status": "needs_verification",
       "technical_access": "not_checked",
@@ -500,10 +500,76 @@
       "access_error": null,
       "review_status": "needs_more_evidence",
       "jurisdiction": "Papua New Guinea",
+      "legal_status": "in_force",
+      "legal_status_evidence": "National Gazette No. G80, published 4 February 2022, gives a Notice of Commencement fixing 1 January 2022 for No.14 of 2021 — District Development Authority (Amendment) Act 2021. The Gazette is published by authority. The PacLII PNG legislation index updated 14 April 2022 independently lists commencement 1 January 2022 and cites G80/2022.",
+      "redistribution_permission": "unknown",
+      "reviewer_notes": "COMMENCEMENT CONFIRMED: National Gazette No. G80, Port Moresby, 4 February 2022, Notice of Commencement schedule expressly includes No.14 of 2021 — District Development Authority (Amendment) Act 2021 and fixes 1 January 2022 as commencement. Gazette is a primary publication reproduced by PNGi Portal. PacLII's index updated 14 April 2022 corroborates 1 January 2022 and cites G80/2022. The earlier vLex note that this amendment had not commenced was stale. The amendment is in force from 1 January 2022; verify subsequent amendments and retain the original Act separately."
+    },
+    {
+      "candidate_id": "c0a0000000000025",
+      "url": "https://www.paclii.org/pg/legis/num_act/olopgalgdal20141071.pdf",
+      "title": "Organic Law on Provincial Governments and Local-level Governments (District Development Authority) (Amendment) Law 2014",
+      "available_date": null,
+      "discovery_method": "PacLII primary-instrument reproduction and DDA Watch source cross-reference",
+      "candidate_type": "organic_law_amendment",
+      "source_id": "paclii",
+      "source_name": "Pacific Islands Legal Information Institute",
+      "source_url": "https://www.paclii.org/pg/legis/num_act/olopgalgdal20141071.pdf",
+      "source_type": "legal_information_service",
+      "source_review_status": "needs_verification",
+      "technical_access": "accessible_non_html",
+      "http_status": null,
+      "access_error": null,
+      "review_status": "needs_more_evidence",
+      "jurisdiction": "Papua New Guinea",
       "legal_status": "status_unknown",
       "legal_status_evidence": null,
       "redistribution_permission": "unknown",
-      "reviewer_notes": "Secondary database lists this amendment and says not commenced as at its snapshot. Verify primary instrument and commencement notice."
+      "reviewer_notes": "PacLII reproduces the text of the Organic Law on Provincial Governments and Local-level Governments (District Development Authority) (Amendment) Law 2014. The retrieved PDF's law number field appears blank/illegible in the extract. It amends sections 3, 25, 33A and 72, among others. Obtain certified original, exact law number, Gazette publication/certification and commencement evidence. Do not conflate with District Development Authority Act 2014 No.40."
+    },
+    {
+      "candidate_id": "c0a0000000000026",
+      "url": "https://pngiportal.org/directory/national-gazette-g61-101-2022",
+      "title": "National Gazette No. G80 — commencement notice for District Development Authority (Amendment) Act 2021 No.14",
+      "available_date": "2022-02-04",
+      "discovery_method": "National Gazette notice of commencement",
+      "candidate_type": "commencement_notice",
+      "source_id": "pngiportal_gazette_archive",
+      "source_name": "PNGi Portal National Gazette archive",
+      "source_url": "https://pngiportal.org/directory/national-gazette-g61-101-2022",
+      "source_type": "legal_information_service",
+      "source_review_status": "needs_verification",
+      "technical_access": "accessible_html",
+      "http_status": null,
+      "access_error": null,
+      "review_status": "needs_more_evidence",
+      "jurisdiction": "Papua New Guinea",
+      "legal_status": "not_applicable",
+      "legal_status_evidence": null,
+      "redistribution_permission": "unknown",
+      "reviewer_notes": "Primary Gazette text reproduced by PNGi Portal: National Gazette No. G80, Port Moresby, Friday 4 February 2022, page 19 in the archive extract. Notice fixes 1 January 2022 as commencement date for No.14 of 2021 — District Development Authority (Amendment) Act 2021. Obtain/retain the original Government Printer Gazette copy if possible; verify scan and page."
+    },
+    {
+      "candidate_id": "c0a0000000000027",
+      "url": "https://pngiportal.org/directory/national-gazette-g680-720-2021",
+      "title": "National Gazette No. G712 — NCD commencement notice for Organic Law on Provincial Governments and Local-level Governments 1995 No.16 of 1995",
+      "available_date": "2021-10-21",
+      "discovery_method": "National Gazette notice of commencement",
+      "candidate_type": "commencement_notice",
+      "source_id": "pngiportal_gazette_archive",
+      "source_name": "PNGi Portal National Gazette archive",
+      "source_url": "https://pngiportal.org/directory/national-gazette-g680-720-2021",
+      "source_type": "legal_information_service",
+      "source_review_status": "needs_verification",
+      "technical_access": "accessible_html",
+      "http_status": null,
+      "access_error": null,
+      "review_status": "needs_more_evidence",
+      "jurisdiction": "Papua New Guinea",
+      "legal_status": "not_applicable",
+      "legal_status_evidence": null,
+      "redistribution_permission": "unknown",
+      "reviewer_notes": "National Gazette No. G712, dated 21 October 2021, page 17 in the archive extract, gives notice under Organic Law on Provincial Governments and Local-level Governments 1995 (No.16 of 1995) fixing the date of Gazette publication as commencement for NCD. This does not establish that the Ombudsman-hosted text labelled No.29 of 1998 is the same instrument or version. Preserve the identity distinction pending legal reconciliation."
     }
   ],
   "usage_notes": [
@@ -516,6 +582,7 @@
     "Keep rejected and duplicate records distinguishable from approved records.",
     "Only approved candidates may be transferred to the legal-resources catalogue.",
     "A source-authority review candidate is not itself legislation.",
-    "Amendment database statements about commencement are time-bounded secondary evidence. Confirm current legal effect from the original Act and Gazette commencement notice."
+    "Amendment database statements about commencement are time-bounded secondary evidence. Confirm current legal effect from the original Act and Gazette commencement notice.",
+    "When recording commencement, capture the Gazette issue, publication date, page, named instrument and the actual commencement date separately; the Gazette publication date and commencement date may differ."
   ]
 }

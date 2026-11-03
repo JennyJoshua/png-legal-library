@@ -1,89 +1,88 @@
-# PNG National Legislation Inventory — Verification Report
+# PNG National Legislation Inventory — Verification Update
 
-**Review date:** 2 November 2026  
+**Review date:** 3 November 2026  
 **Branch:** `phase10/legal-corpus-foundation`  
-**Scope:** Organic Law on Provincial Governments and Local-level Governments; Provincial Governments Administration Act; Local-level Governments Administration Act; District Development Authority Act and identified amendments.
+**Scope:** Organic Law on Provincial Governments and Local-level Governments; District Development Authority Act and amendments.
 
 ## Executive result
 
-The exact identities of the four principal instruments below are now supported by official PNG institutional copies or pages. This is a meaningful improvement over discovery-only records. It is **not** a complete current-law verification: the public official copies do not consistently show a certification date, a complete amendment table or a current consolidation date. All four remain `status_unknown` in the machine-readable queue until primary amendment and commencement evidence is assembled.
+This update resolves one significant commencement question and identifies an important Organic Law numbering/version issue.
 
-## Instrument-by-instrument findings
+- **District Development Authority (Amendment) Act 2021, No. 14 of 2021:** commencement is established by National Gazette No. G80. The notice was published on 4 February 2022 and fixed 1 January 2022 as the commencement date. This supersedes the older vLex snapshot warning that the amendment had not yet commenced.
+- **District Development Authority (Amendment) Acts 2015 No.37 and 2016 No.11:** PacLII's PNG legislation index, updated 14 April 2022, lists both as N.I.F. (not in force) at that date. No later commencement notice has been established in this pass. Do not treat the 2022 index as proof of their status in November 2026.
+- **Organic Law:** the Ombudsman Commission-hosted text is labelled No.29 of 1998 and has a blank certification date. Separately, PacLII provides a consolidation dated 1 December 2014 of the Organic Law on Provincial Governments and Local-level Governments. National Gazette No. G712 (21 October 2021) contains a commencement notice for the Organic Law on Provincial Governments and Local-level Governments 1995, No.16 of 1995, specifically fixing commencement for the National Capital District. These records must not be assumed to describe the same edition or instrument without reconciliation.
 
-### 1. Organic Law on Provincial Governments and Local-level Governments — No. 29 of 1998
+## 1. District Development Authority Act 2014 — No. 40 of 2014
 
-**Identity:** Confirmed by the Ombudsman Commission's legislation page, which gives the exact title and No. 29 of 1998. DPLGA also hosts an official-copy PDF.
+The Act is identified in the DPLGA official-copy PDF. PacLII's legislation index updated 14 April 2022 lists its commencement date as **1 January 2015**.
 
-**Commencement:** The text states:
-- for provinces other than Bougainville and the National Capital District: on certification;
-- for Bougainville: 1 January 1999;
-- for the National Capital District: in accordance with a National Gazette notice.
+The same index gives the following amendment table:
 
-The displayed “Certified on” field on the Ombudsman page is blank. I have not located the primary certification record or the NCD Gazette notice in this review. Therefore I cannot state a single commencement date covering all applications.
-
-**Amendment leads:** The official text includes footnote references to amendments, including amendments numbered 1, 4 and 5 in 1995–1997. A separate copy of the Organic Law on Provincial Governments and Local-level Governments (District Development Authority) (Amendment) Law 2014 was located, with provisions addressing the DDA structure and related sections. The 2014 copy found in this review is hosted by a non-government site, so it is a lead only. The exact complete amendment list and official Gazette evidence remain outstanding.
-
-**Current status:** Not certified as a fully consolidated current text. The Organic Law is clearly an identified constitutional law and remains listed by the Ombudsman Commission and DPLGA, but that alone is not enough to certify every amendment and commencement detail. Keep `status_unknown`.
-
-**Sources:** [Ombudsman Commission text](https://www.ombudsman.gov.pg/legislation/organic-law-on-provincial-governments-llgs/); [DPLGA official-copy PDF](https://www.dplga.gov.pg/wp-content/uploads/2022/06/OrganicLawOnProvincial-levelGovernments.pdf); [2014 DDA Organic Law amendment copy — non-government host](https://ddawatch.gn.apc.org/sites/default/files/2023-06/Organic%20Law%20on%20Provincial%20Governments%20and%20Local-level%20Governments%20%28DDA%29%20%28Amendment%29%202014.pdf).
-
-### 2. Provincial Governments Administration Act 1997 — No. 7 of 1997
-
-**Identity:** Confirmed by the DPLGA-hosted document, which labels itself an official copy of PNG legislation and identifies the Act as No. 7 of 1997. The long title says it implements aspects of the Organic Law concerning administration of Provincial Governments. NEFC also lists a document under this title.
-
-**Amendments and commencement:** This review did not establish a complete amendment/repeal register, a primary commencement notice or a current consolidation date. The official-copy PDF is a useful primary institutional copy, but its upload location/date is not evidence of the text's currency.
-
-**Current status:** Not independently certified as current/in force. Keep `status_unknown`.
-
-**Sources:** [DPLGA official-copy PDF](https://www.dplga.gov.pg/wp-content/uploads/2022/06/ProvincialGovernmentAadministrationAct.pdf); [NEFC legislation list](https://www.nefc.gov.pg/legislation/).
-
-### 3. Local-level Governments Administration Act 1997 — No. 33 of 1997
-
-**Identity:** Confirmed by the DPLGA-hosted official-copy PDF. NEFC also lists the Act.
-
-**Amendment leads:** FAOLEX metadata reports a 2005 text/revision. A vLex legal database identifies the Local-level Governments Administration (Amendment) Act 2014, No. 47 of 2014, and reports that it had not commenced at the time of that database edition. The same database refers to a consolidation “to No. 13 of 2022”. Those statements are secondary and time-bounded. They cannot establish the present commencement or legal effect of the 2014 amendment.
-
-**Current status:** No authoritative current consolidated text or primary Gazette commencement proof was established. Keep `status_unknown`.
-
-**Sources:** [DPLGA official-copy PDF](https://www.dplga.gov.pg/wp-content/uploads/2022/06/Local-levelGovernmentAct.pdf); [NEFC legislation list](https://www.nefc.gov.pg/legislation/); [FAOLEX result](https://www.fao.org/faolex/country-profiles/general-profile/see-more/en/?area=Miscellaneous&countryname=Papua+New+Guinea&iso3=PNG); [vLex amendment metadata](https://vlex.com/vid/local-level-governments-administration-923861883).
-
-### 4. District Development Authority Act 2014 — No. 40 of 2014
-
-**Identity:** Confirmed by the DPLGA-hosted official-copy PDF. The Act title and No. 40 of 2014 are visible in the official copy.
-
-**Commencement and amendments:** vLex reports commencement on 1 January 2015 and identifies three subsequent amendment Acts: No. 37 of 2015, No. 11 of 2016 and No. 14 of 2021. The same database warns that these amendments had not commenced at the time of its publication snapshot. That warning may be stale; it must not be carried forward as a current conclusion. The original Act and each amendment must be checked against Gazette notices and any later commencement instruments.
-
-**Related constitutional alteration:** The Organic Law on Provincial Governments and Local-level Governments (District Development Authority) (Amendment) Law 2014 is a separate instrument from the DDA Act. Both must be tracked; do not conflate them.
-
-**Current status:** Not independently certified as current/in force. Keep `status_unknown`.
-
-**Sources:** [DPLGA official-copy PDF](https://www.dplga.gov.pg/wp-content/uploads/2022/06/DistrictDevelopmentAuthorityAct.pdf); [vLex DDA Act and amendment metadata](https://vlex.com/vid/district-development-authority-act-923861125); [2014 Organic Law amendment copy — non-government host](https://ddawatch.gn.apc.org/sites/default/files/2023-06/Organic%20Law%20on%20Provincial%20Governments%20and%20Local-level%20Governments%20%28DDA%29%20%28Amendment%29%202014.pdf).
-
-## Amendment instruments added to the review queue
-
-| Instrument | What was found | Remaining proof |
+| Amendment | Index status / date | Current assessment |
 |---|---|---|
-| Organic Law (DDA) Amendment Law 2014 | Text copy located; non-government host | Certified original, Gazette publication and commencement |
-| Local-level Governments Administration (Amendment) Act 2014, No. 47 | Secondary database identifies it; database snapshot says not commenced then | Original Act, Gazette issue/page and current commencement notice |
-| District Development Authority (Amendment) Act 2015, No. 37 | Secondary database identifies it; snapshot says not commenced then | Original Act and current commencement notice |
-| District Development Authority (Amendment) Act 2016, No. 11 | Secondary database identifies it; snapshot says not commenced then | Original Act and current commencement notice |
-| District Development Authority (Amendment) Act 2021, No. 14 | Secondary database identifies it; snapshot says not commenced then | Original Act and current commencement notice |
+| District Development Authority (Amendment) Act 2015, No.37 | N.I.F. as at 14 April 2022 | Later status not established; remain unknown |
+| District Development Authority (Amendment) Act 2016, No.11 | N.I.F. as at 14 April 2022 | Later status not established; remain unknown |
+| District Development Authority (Amendment) Act 2021, No.14 | 1 January 2022; cites G80/2022 | Commencement confirmed by Gazette |
 
-## Source-quality observations
+### 2021 amendment — commencement evidence
 
-- The Ombudsman Commission page is an official institutional source for the Organic Law text, but its displayed certification date is blank.
-- DPLGA hosts documents explicitly labelled “official copy of the Legislation of PNG”. These are the strongest copies located in this pass, but they still need version and Gazette checks.
-- NEFC's legislation page is an additional government institutional discovery index and lists the Provincial Governments Administration Act, Local-level Governments Administration Act, Public Finance Management Act, Public Service Management Act and Intergovernmental Relations (Functions and Funding) Act.
-- PacLII, FAOLEX and vLex help identify amendment history and alternate copies. Treat their records as secondary until checked against primary legislation and Gazette notices.
+National Gazette No. G80, Port Moresby, Friday 4 February 2022, contains a “Notice of Commencement”. Its schedule expressly lists:
 
-## Outstanding actions to reach legal verification
+- No. 13 of 2021 — National Procurement (Amendment) Act 2021;
+- **No. 14 of 2021 — District Development Authority (Amendment) Act 2021**; and
+- No. 15 of 2021 — Public Finances (Management) (Amendment) Act 2021.
 
-1. Obtain the signed/certified original and National Gazette issue/date/page for each principal Act/Organic Law.
-2. Obtain every amendment instrument and its commencement notice.
-3. Check repeal, savings and transitional provisions and later amendments through 2 November 2026.
-4. Confirm the NCD commencement notice for the Organic Law and the general certification date.
-5. Obtain a dated, consolidated current text from OLC or another competent official publisher.
-6. Have a PNG-qualified legal reviewer confirm the final legal-status decisions.
-7. Check copyright/reuse permission separately before storing or distributing full-text copies.
+The notice fixes **1 January 2022** as the date on which the listed Acts came into operation. Thus the DDA Amendment 2021 was certified in Gazette No. G749 on 4 November 2021 and later commenced on 1 January 2022 under G80/2022. The Gazette issue's publication date is not the commencement date.
 
-**Decision:** Exact identities for these four instruments are confirmed; amendment histories and present legal status are not fully verified. Do not move them to the approved catalogue or label them current law yet.
+**Decision:** The 2021 amendment's commencement is established. The 2015 and 2016 amendments remain unresolved after the 14 April 2022 “N.I.F.” index entry. The principal Act's current consolidated state through November 2026 is not yet certified.
+
+Sources:
+- [DPLGA official-copy DDA Act 2014](https://www.dplga.gov.pg/wp-content/uploads/2022/06/DistrictDevelopmentAuthorityAct.pdf)
+- [PacLII PNG legislation index, updated 14 April 2022](https://www.paclii.org/pg/indices/legis/pnglaws-april2022.pdf)
+- [National Gazette G749 — certification of Acts, including No.14 of 2021](https://pngiportal.org/directory/national-gazette-g721-750-2021)
+- [National Gazette G80 — commencement notice](https://pngiportal.org/directory/national-gazette-g61-101-2022)
+
+## 2. Organic Law — identity and commencement reconciliation
+
+### What is established
+
+1. The Ombudsman Commission page labels its hosted text **Organic Law on Provincial Governments and Local-level Governments, No. 29 of 1998**. Its “Certified on” field is blank. The text's commencement clause states commencement on certification for provinces other than Bougainville and NCD; 1 January 1999 for Bougainville; and by Gazette notice for NCD.
+2. PacLII hosts a **Consolidation of Organic Law on Provincial Governments and Local-level Governments dated 1 December 2014**. This is a distinct version record that should be compared against the Ombudsman-hosted copy.
+3. National Gazette No. G712, dated 21 October 2021, contains a notice under the **Organic Law on Provincial Governments and Local-level Governments 1995 (No.16 of 1995)**. It fixes the Gazette publication date as the date that Organic Law comes into operation insofar as it relates to the National Capital District.
+4. PacLII's 2014 consolidation includes the District Development Authority in the administrative system and is linked to the separate 2014 Organic Law (District Development Authority) (Amendment) Law.
+
+### What is not yet established
+
+- Whether the Ombudsman Commission's No.29 of 1998 label identifies a later consolidated text, a particular amendment, or a numbering error in the webpage/PDF.
+- Whether the 1995 No.16 of 1995 principal Organic Law and the Ombudsman-hosted No.29 of 1998 text have been accurately reconciled in the 2014 consolidation.
+- The original certification evidence for the relevant principal Organic Law and the complete amendment chain.
+- The exact number and Gazette commencement details of the 2014 District Development Authority Organic Law amendment. The PacLII reproduction's number field appears blank in the extracted copy.
+
+**Decision:** Do not call the Ombudsman-hosted No.29/1998 text the definitive current consolidated Organic Law. Keep the candidate at `status_unknown` until OLC or certified parliamentary/Gazette records reconcile the instrument identity and version chain.
+
+Sources:
+- [Ombudsman Commission — hosted Organic Law text](https://www.ombudsman.gov.pg/legislation/organic-law-on-provincial-governments-llgs/)
+- [PacLII — 1 December 2014 Organic Law consolidation](https://www.paclii.org/pg/legis/consol_act/olopgalg2014616.pdf)
+- [National Gazette G712 — NCD commencement notice for 1995 No.16](https://pngiportal.org/directory/national-gazette-g680-720-2021)
+- [PacLII — 2014 District Development Authority Organic Law amendment](https://www.paclii.org/pg/legis/num_act/olopgalgdal20141071.pdf)
+
+## 3. Review queue changes
+
+The machine-readable queue now records:
+- the 2021 DDA amendment as `in_force`, with the exact Gazette-based commencement evidence;
+- the 2015 and 2016 DDA amendments as unresolved, while preserving their “N.I.F.” status as of 14 April 2022;
+- the 2014 Organic Law DDA amendment as a separate instrument;
+- the G80/2022 DDA commencement notice as a separate evidence record;
+- the G712/2021 NCD commencement notice for the 1995 No.16 Organic Law as a separate evidence record;
+- an explicit warning not to conflate the 1995 No.16 instrument, the 2014 consolidation and the Ombudsman-hosted No.29/1998-labelled text.
+
+## Remaining work
+
+1. Obtain OLC-certified master text and amendment table for the Organic Law.
+2. Resolve the No.16 of 1995 / No.29 of 1998 numbering discrepancy.
+3. Obtain the Gazette publication and commencement details for the 2014 Organic Law DDA amendment.
+4. Find any post-April-2022 commencement notices for DDA amendment Acts No.37 of 2015 and No.11 of 2016.
+5. Check all amendments to the DDA Act after No.14 of 2021 through 3 November 2026.
+6. Obtain a dated, official consolidated DDA Act text and professional PNG legal review.
+
+**Decision:** DDA Amendment 2021 commencement is confirmed. Other current-law determinations remain open. No document has been moved into the approved legal catalogue.
