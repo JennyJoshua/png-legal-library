@@ -28,7 +28,10 @@
       "minLength": 1
     },
     "last_updated": {
-      "type": ["string", "null"],
+      "type": [
+        "string",
+        "null"
+      ],
       "format": "date"
     },
     "review_policy": {
@@ -124,37 +127,64 @@
           "pattern": "^https?://"
         },
         "final_url": {
-          "type": ["string", "null"],
+          "type": [
+            "string",
+            "null"
+          ],
           "format": "uri"
         },
         "title": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "available_date": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "discovery_method": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "candidate_type": {
           "type": "string",
           "minLength": 1
         },
         "source_id": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "source_name": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "source_url": {
-          "type": ["string", "null"],
+          "type": [
+            "string",
+            "null"
+          ],
           "format": "uri"
         },
         "source_type": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "source_review_status": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "technical_access": {
           "type": "string",
@@ -173,12 +203,18 @@
           ]
         },
         "http_status": {
-          "type": ["integer", "null"],
+          "type": [
+            "integer",
+            "null"
+          ],
           "minimum": 100,
           "maximum": 599
         },
         "access_error": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "review_status": {
           "type": "string",
@@ -234,7 +270,10 @@
           ]
         },
         "legal_status_evidence": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "redistribution_permission": {
           "type": "string",
@@ -245,21 +284,43 @@
           ]
         },
         "reviewer_notes": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "reviewed_by": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "reviewed_date": {
-          "type": ["string", "null"],
+          "type": [
+            "string",
+            "null"
+          ],
           "format": "date"
         },
         "duplicate_of": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "catalogue_resource_id": {
-          "type": ["string", "null"],
+          "type": [
+            "string",
+            "null"
+          ],
           "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "source_observations": {
+          "type": "array",
+          "description": "Per-source discovery observations. These are provenance records, not legal verification.",
+          "items": {
+            "$ref": "#/$defs/sourceObservation"
+          }
         }
       },
       "allOf": [
@@ -270,7 +331,9 @@
                 "const": "approved_for_catalogue"
               }
             },
-            "required": ["review_status"]
+            "required": [
+              "review_status"
+            ]
           },
           "then": {
             "required": [
@@ -288,7 +351,9 @@
                 "const": "in_force"
               }
             },
-            "required": ["legal_status"]
+            "required": [
+              "legal_status"
+            ]
           },
           "then": {
             "properties": {
@@ -297,10 +362,118 @@
                 "minLength": 1
               }
             },
-            "required": ["legal_status_evidence"]
+            "required": [
+              "legal_status_evidence"
+            ]
           }
         }
       ]
+    },
+    "sourceObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "url",
+        "technical_access",
+        "first_seen_at",
+        "last_seen_at"
+      ],
+      "properties": {
+        "source_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source_url": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        },
+        "source_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source_review_status": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https?://"
+        },
+        "final_url": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        },
+        "discovery_method": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "technical_access": {
+          "type": "string",
+          "enum": [
+            "accessible_html",
+            "accessible_non_html",
+            "accessible_html_parse_error",
+            "not_checked",
+            "forbidden",
+            "not_found",
+            "rate_limited",
+            "http_error",
+            "network_error",
+            "unreachable",
+            "inspection_error"
+          ]
+        },
+        "http_status": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 100,
+          "maximum": 599
+        },
+        "access_error": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "first_seen_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "last_seen_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        }
+      }
     }
   }
 }
