@@ -60,6 +60,7 @@ on:
     branches:
       - main
       - phase10/legal-corpus-foundation
+      - phase12/pipeline-reliability
     paths:
       - 'data/documents.json'
       - 'data/document-versions.json'
