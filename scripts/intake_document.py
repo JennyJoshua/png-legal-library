@@ -139,23 +139,31 @@ def intake(args):
             "date_added": now[:10], "last_verified_date": None, "verification_status": "pending_review",
             "legal_status": "status_unknown", "legal_status_evidence": None, "amendments": [],
             "related_document_ids": [], "language": "en", "file_path": archived_path,
-            "checksum_sha256": checksum, "redistribution_permission": args.redistribution_permission,
+            "checksum_sha256": checksum, "current_version_id": version_id,
+            "redistribution_permission": args.redistribution_permission,
             "reviewer_notes": None
         }
         register["documents"].append(record)
     else:
-        # Update only observed file facts. Reviewer/legal assessments are deliberately preserved.
+        # Verification and legal-status assessments belong to the exact file
+        # version reviewed. A newly observed file must not inherit approval
+        # from an earlier checksum. Preserve notes, but require fresh review.
         existing["checksum_sha256"] = checksum
+        existing["current_version_id"] = version_id
         existing["file_path"] = archived_path
-        if existing.get("verification_status") not in ("verified", "verification_failed"):
-            existing["verification_status"] = "pending_review"
+        existing["verification_status"] = "pending_review"
+        existing["last_verified_date"] = None
+        existing["legal_status"] = "status_unknown"
+        existing["legal_status_evidence"] = None
+        existing["redistribution_permission"] = args.redistribution_permission
 
     version = {
         "version_id": version_id, "document_id": args.document_id, "version_number": version_number,
         "checksum_sha256": checksum, "file_name": supplied.name, "file_size_bytes": size,
         "media_type": media_type, "source_url": args.source_url, "source_id": args.source_id,
         "observed_at": now, "previous_version_id": previous_id, "review_status": "pending_review",
-        "redistribution_permission": args.redistribution_permission, "archived_path": archived_path
+        "redistribution_permission": args.redistribution_permission, "archived_path": archived_path,
+        "verification_status": "pending_review", "verification_evidence": None, "verified_at": None
     }
     history["versions"].append(version)
     save_json_atomic(HISTORY, history)
