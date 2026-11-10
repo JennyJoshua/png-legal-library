@@ -200,7 +200,8 @@
             "network_error",
             "unreachable",
             "inspection_error",
-            "robots_disallowed"
+            "robots_disallowed",
+            "redirect_blocked"
           ]
         },
         "http_status": {
