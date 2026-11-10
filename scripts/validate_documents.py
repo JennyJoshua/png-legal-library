@@ -388,6 +388,39 @@ def validate_document_versions(history, schema, register):
             if version.get("previous_version_id") != previous:
                 errors.append(f"Document {document_id}: broken previous_version_id chain at version {version.get('version_number')}.")
             previous = version.get("version_id")
+
+    # When a document declares its current version, its checksum and
+    # verification state must describe that exact version record.
+    for document_id, document in documents.items():
+        current_version_id = document.get("current_version_id")
+        if not current_version_id:
+            continue
+        versions = by_document.get(document_id, [])
+        if not versions:
+            errors.append(
+                f"Document {document_id}: current_version_id references a document with no version history."
+            )
+            continue
+        latest = max(versions, key=lambda item: item.get("version_number", 0))
+        if current_version_id != latest.get("version_id"):
+            errors.append(
+                f"Document {document_id}: current_version_id must reference the latest version."
+            )
+        if document.get("checksum_sha256") != latest.get("checksum_sha256"):
+            errors.append(
+                f"Document {document_id}: current checksum does not match its current version."
+            )
+        version_verification = latest.get("verification_status")
+        if version_verification and document.get("verification_status") != version_verification:
+            errors.append(
+                f"Document {document_id}: verification_status does not match the current version."
+            )
+        for field in ("last_verified_date", "legal_status", "legal_status_evidence"):
+            if field in latest and document.get(field) != latest.get(field):
+                errors.append(
+                    f"Document {document_id}: {field} does not match the current version."
+                )
+
     return errors, len(history.get("versions", []))
 
 

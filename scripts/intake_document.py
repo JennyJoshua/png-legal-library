@@ -113,6 +113,33 @@ def intake(args):
 
     prior = [v for v in history["versions"] if v["document_id"] == args.document_id]
     prior.sort(key=lambda v: v["version_number"])
+
+    # Snapshot the assessment currently attached to the document onto its
+    # exact previous version before the document record moves to a new file.
+    if existing and prior:
+        current_version_id = existing.get("current_version_id")
+        previous_current = next(
+            (item for item in prior if item.get("version_id") == current_version_id),
+            None,
+        )
+        if previous_current is None:
+            previous_current = next(
+                (item for item in prior
+                 if item.get("checksum_sha256") == existing.get("checksum_sha256")),
+                None,
+            )
+        if previous_current is not None:
+            previous_current["verification_status"] = existing.get(
+                "verification_status", "pending_review"
+            )
+            previous_current["last_verified_date"] = existing.get("last_verified_date")
+            previous_current["legal_status"] = existing.get(
+                "legal_status", "status_unknown"
+            )
+            previous_current["legal_status_evidence"] = existing.get(
+                "legal_status_evidence"
+            )
+
     version_number = len(prior) + 1
     previous_id = prior[-1]["version_id"] if prior else None
     version_id = uuid4().hex[:16]
@@ -139,23 +166,33 @@ def intake(args):
             "date_added": now[:10], "last_verified_date": None, "verification_status": "pending_review",
             "legal_status": "status_unknown", "legal_status_evidence": None, "amendments": [],
             "related_document_ids": [], "language": "en", "file_path": archived_path,
-            "checksum_sha256": checksum, "redistribution_permission": args.redistribution_permission,
+            "checksum_sha256": checksum, "current_version_id": version_id,
+            "redistribution_permission": args.redistribution_permission,
             "reviewer_notes": None
         }
         register["documents"].append(record)
     else:
-        # Update only observed file facts. Reviewer/legal assessments are deliberately preserved.
+        # Verification and legal-status assessments belong to the exact file
+        # version reviewed. A newly observed file must not inherit approval
+        # from an earlier checksum. Preserve notes, but require fresh review.
         existing["checksum_sha256"] = checksum
+        existing["current_version_id"] = version_id
         existing["file_path"] = archived_path
-        if existing.get("verification_status") not in ("verified", "verification_failed"):
-            existing["verification_status"] = "pending_review"
+        existing["verification_status"] = "pending_review"
+        existing["last_verified_date"] = None
+        existing["legal_status"] = "status_unknown"
+        existing["legal_status_evidence"] = None
+        existing["redistribution_permission"] = args.redistribution_permission
 
     version = {
         "version_id": version_id, "document_id": args.document_id, "version_number": version_number,
         "checksum_sha256": checksum, "file_name": supplied.name, "file_size_bytes": size,
         "media_type": media_type, "source_url": args.source_url, "source_id": args.source_id,
         "observed_at": now, "previous_version_id": previous_id, "review_status": "pending_review",
-        "redistribution_permission": args.redistribution_permission, "archived_path": archived_path
+        "redistribution_permission": args.redistribution_permission, "archived_path": archived_path,
+        "verification_status": "pending_review", "verification_evidence": None, "verified_at": None,
+        "last_verified_date": None, "legal_status": "status_unknown",
+        "legal_status_evidence": None
     }
     history["versions"].append(version)
     save_json_atomic(HISTORY, history)

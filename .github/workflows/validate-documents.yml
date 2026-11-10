@@ -61,6 +61,7 @@ on:
       - main
       - phase10/legal-corpus-foundation
       - phase12/pipeline-reliability
+      - phase12/document-version-integrity-v2
     paths:
       - 'data/documents.json'
       - 'data/document-versions.json'

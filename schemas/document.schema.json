@@ -43,21 +43,33 @@
       "const": "Papua New Guinea"
     },
     "issuing_authority": {
-      "type": ["string", "null"]
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "source_id": {
-      "type": ["string", "null"]
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "source_url": {
       "type": "string",
       "format": "uri"
     },
     "publication_date": {
-      "type": ["string", "null"],
+      "type": [
+        "string",
+        "null"
+      ],
       "format": "date"
     },
     "commencement_date": {
-      "type": ["string", "null"],
+      "type": [
+        "string",
+        "null"
+      ],
       "format": "date"
     },
     "date_added": {
@@ -65,7 +77,10 @@
       "format": "date"
     },
     "last_verified_date": {
-      "type": ["string", "null"],
+      "type": [
+        "string",
+        "null"
+      ],
       "format": "date"
     },
     "verification_status": {
@@ -92,7 +107,10 @@
       "default": "status_unknown"
     },
     "legal_status_evidence": {
-      "type": ["string", "null"]
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "amendments": {
       "type": "array",
@@ -113,10 +131,16 @@
       "default": "en"
     },
     "file_path": {
-      "type": ["string", "null"]
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "checksum_sha256": {
-      "type": ["string", "null"],
+      "type": [
+        "string",
+        "null"
+      ],
       "pattern": "^[a-fA-F0-9]{64}$"
     },
     "redistribution_permission": {
@@ -130,7 +154,18 @@
       "default": "unknown"
     },
     "reviewer_notes": {
-      "type": ["string", "null"]
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "current_version_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-f0-9]{16}$",
+      "description": "Version ID of the currently registered file; verification applies only to this version."
     }
   }
 }
