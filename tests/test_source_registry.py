@@ -43,5 +43,19 @@ class SourceRegistryTests(unittest.TestCase):
         errors, _ = validator.validate_source_registry(registry, self.schema, {"candidates": []})
         self.assertTrue(errors)
 
+    def test_unknown_source_observation_is_rejected(self):
+        queue = {
+            "candidates": [{
+                "candidate_id": "0123456789abcdef",
+                "source_id": "png_parliament",
+                "source_observations": [
+                    {"source_id": "missing_secondary_source"}
+                ]
+            }]
+        }
+        errors, _ = validator.validate_source_registry(self.registry, self.schema, queue)
+        self.assertTrue(any("source observation references unknown source_id" in error for error in errors))
+
+
 if __name__ == "__main__":
     unittest.main()

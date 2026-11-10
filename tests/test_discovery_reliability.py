@@ -174,5 +174,115 @@ class DiscoveryReliabilityTests(unittest.TestCase):
         self.assertIn("tests/test_discovery_reliability.py", workflow)
 
 
+    def test_merge_retains_observations_from_multiple_sources(self):
+        merge_path = ROOT / "scripts" / "merge-discovery-review-queue.py"
+        merge_spec = importlib.util.spec_from_file_location("merge_multi_source", merge_path)
+        merge = importlib.util.module_from_spec(merge_spec)
+        merge_spec.loader.exec_module(merge)
+
+        candidate = {
+            "candidate_id": "0123456789abcdef",
+            "url": "https://example.org/act.pdf",
+            "source_id": "source1",
+            "source_name": "Primary source",
+            "source_url": "https://source1.example.org/",
+            "source_type": "official_government",
+            "source_review_status": "candidate",
+            "discovery_method": "homepage_link",
+            "technical_access": "accessible_html",
+            "review_status": "under_review",
+            "legal_status": "status_unknown",
+            "redistribution_permission": "unknown",
+            "reviewer_notes": "Preserve this human note",
+        }
+        queue = {
+            "queue_version": "1.0", "jurisdiction": "Papua New Guinea",
+            "candidates": [candidate],
+            "review_policy": {
+                "automatic_approval": False, "automatic_legal_status_changes": False,
+                "automatic_redistribution_approval": False, "require_human_review": True,
+                "preserve_source_url": True, "protect_personal_information": True
+            }
+        }
+        def source(source_id, source_name, source_url):
+            return {
+                "source_id": source_id, "source_name": source_name,
+                "source_url": source_url, "source_type": "official_government",
+                "source_review_status": "candidate",
+                "candidates": [{
+                    "candidate_id": "0123456789abcdef",
+                    "url": "https://example.org/act.pdf",
+                    "final_url": "https://example.org/act.pdf",
+                    "discovery_method": "sitemap",
+                    "technical_access": "accessible_non_html",
+                    "http_status": 200, "access_error": None
+                }]
+            }
+
+        report = {
+            "generated_at": "2026-11-10T12:00:00+00:00",
+            "sources": [
+                source("source1", "Primary source", "https://source1.example.org/"),
+                source("source2", "Secondary source", "https://source2.example.org/")
+            ]
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            original_path = merge.REVIEW_QUEUE
+            merge.REVIEW_QUEUE = Path(tmp) / "queue.json"
+            try:
+                merge.REVIEW_QUEUE.write_text(json.dumps(queue), encoding="utf-8")
+                merge.merge_candidates(report, queue)
+            finally:
+                merge.REVIEW_QUEUE = original_path
+
+        observations = candidate["source_observations"]
+        self.assertEqual(len(observations), 2)
+        self.assertEqual({item["source_id"] for item in observations}, {"source1", "source2"})
+        self.assertEqual(candidate["source_id"], "source1")
+        self.assertEqual(candidate["review_status"], "under_review")
+        self.assertEqual(candidate["reviewer_notes"], "Preserve this human note")
+        self.assertEqual(candidate["legal_status"], "status_unknown")
+        self.assertEqual(candidate["redistribution_permission"], "unknown")
+
+    def test_repeated_source_observation_refreshes_instead_of_duplicating(self):
+        merge_path = ROOT / "scripts" / "merge-discovery-review-queue.py"
+        merge_spec = importlib.util.spec_from_file_location("merge_repeat_source", merge_path)
+        merge = importlib.util.module_from_spec(merge_spec)
+        merge_spec.loader.exec_module(merge)
+        queue = {
+            "queue_version": "1.0", "jurisdiction": "Papua New Guinea",
+            "candidates": [],
+            "review_policy": {
+                "automatic_approval": False, "automatic_legal_status_changes": False,
+                "automatic_redistribution_approval": False, "require_human_review": True,
+                "preserve_source_url": True, "protect_personal_information": True
+            }
+        }
+        discovered = {
+            "candidate_id": "fedcba9876543210",
+            "url": "https://example.org/law.pdf",
+            "technical_access": "accessible_html"
+        }
+        source = {
+            "source_id": "source1", "source_name": "Source 1",
+            "source_url": "https://source1.example.org/",
+            "source_type": "official_government",
+            "source_review_status": "candidate", "candidates": [discovered]
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            original_path = merge.REVIEW_QUEUE
+            merge.REVIEW_QUEUE = Path(tmp) / "queue.json"
+            try:
+                merge.REVIEW_QUEUE.write_text(json.dumps(queue), encoding="utf-8")
+                merge.merge_candidates({"generated_at": "2026-11-09T10:00:00+00:00", "sources": [source]}, queue)
+                merge.merge_candidates({"generated_at": "2026-11-10T10:00:00+00:00", "sources": [source]}, queue)
+            finally:
+                merge.REVIEW_QUEUE = original_path
+        observations = queue["candidates"][0]["source_observations"]
+        self.assertEqual(len(observations), 1)
+        self.assertEqual(observations[0]["first_seen_at"], "2026-11-09T10:00:00+00:00")
+        self.assertEqual(observations[0]["last_seen_at"], "2026-11-10T10:00:00+00:00")
+
+
 if __name__ == "__main__":
     unittest.main()

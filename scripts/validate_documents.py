@@ -330,6 +330,22 @@ def validate_source_registry(registry, schema, queue):
                 f"Candidate {candidate.get('candidate_id', index)} references "
                 f"unknown source_id '{source_id}'."
             )
+        for observation_index, observation in enumerate(
+            candidate.get("source_observations", [])
+        ):
+            if not isinstance(observation, dict):
+                errors.append(
+                    f"Candidate {candidate.get('candidate_id', index)} "
+                    f"source observation {observation_index} must be an object."
+                )
+                continue
+            observed_source_id = observation.get("source_id")
+            if observed_source_id and observed_source_id not in source_ids:
+                errors.append(
+                    f"Candidate {candidate.get('candidate_id', index)} "
+                    f"source observation references unknown source_id "
+                    f"'{observed_source_id}'."
+                )
     rules = registry.get("discovery_rules", {})
     if isinstance(rules, dict) and rules.get("automatic_legal_status_changes") is not False:
         errors.append("Source registry must disable automatic legal-status changes.")
