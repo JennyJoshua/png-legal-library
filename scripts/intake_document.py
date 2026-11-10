@@ -165,7 +165,18 @@ def intake(args):
         if destination.exists() and sha256_file(destination) != checksum:
             raise ValueError("Archive destination already exists with a different checksum.")
         if not destination.exists():
-            shutil.copyfile(supplied, destination)
+            # Stage the content-addressed archive beside its final path and
+            # atomically publish it only after the checksum is confirmed.
+            # A crash during copy must never leave a partial final archive.
+            temporary_destination = destination.with_name(destination.name + ".tmp")
+            try:
+                shutil.copyfile(supplied, temporary_destination)
+                if sha256_file(temporary_destination) != checksum:
+                    raise ValueError("Archived copy checksum does not match the supplied file.")
+                temporary_destination.replace(destination)
+            finally:
+                if temporary_destination.exists():
+                    temporary_destination.unlink()
         archived_path = relative.as_posix()
 
     if existing is None:
