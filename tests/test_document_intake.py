@@ -57,6 +57,11 @@ class DocumentIntakeTests(unittest.TestCase):
         self.assertEqual(doc["legal_status"], "status_unknown")
         self.assertIsNone(doc["file_path"])
         self.assertEqual(doc["checksum_sha256"], result["checksum_sha256"])
+        self.assertEqual(doc["current_version_id"], result["version_id"])
+        version = self.load(self.history_path)["versions"][0]
+        self.assertEqual(version["verification_status"], "pending_review")
+        self.assertIsNone(version["verification_evidence"])
+        self.assertIsNone(version["verified_at"])
         self.assertFalse(result["archived"])
 
     def test_same_file_is_idempotent(self):
@@ -73,6 +78,7 @@ class DocumentIntakeTests(unittest.TestCase):
         versions = self.load(self.history_path)["versions"]
         self.assertEqual(second["version_number"], 2)
         self.assertEqual(versions[1]["previous_version_id"], first["version_id"])
+        self.assertEqual(versions[1]["verification_status"], "pending_review")
         self.assertEqual(len(versions), 2)
 
     def test_unknown_permission_never_archives_copy(self):
@@ -86,7 +92,7 @@ class DocumentIntakeTests(unittest.TestCase):
         archived_path = self.load(self.history_path)["versions"][0]["archived_path"]
         self.assertTrue((self.base / archived_path).is_file())
 
-    def test_existing_reviewer_decisions_are_preserved(self):
+    def test_new_version_resets_current_verification_but_preserves_notes(self):
         intake.intake(self.args())
         data = self.load(self.register_path)
         data["documents"][0]["verification_status"] = "verified"
@@ -97,10 +103,14 @@ class DocumentIntakeTests(unittest.TestCase):
         self.file.write_bytes(b"%PDF-1.4\nnew-version")
         intake.intake(self.args())
         doc = self.load(self.register_path)["documents"][0]
-        self.assertEqual(doc["verification_status"], "verified")
-        self.assertEqual(doc["legal_status"], "in_force")
-        self.assertEqual(doc["legal_status_evidence"], "review evidence")
+        self.assertEqual(doc["verification_status"], "pending_review")
+        self.assertIsNone(doc["last_verified_date"])
+        self.assertEqual(doc["legal_status"], "status_unknown")
+        self.assertIsNone(doc["legal_status_evidence"])
         self.assertEqual(doc["reviewer_notes"], "Do not overwrite this note")
+        versions = self.load(self.history_path)["versions"]
+        self.assertEqual(doc["current_version_id"], versions[-1]["version_id"])
+        self.assertEqual(versions[-1]["verification_status"], "pending_review")
 
     def test_unknown_source_rejected(self):
         args = self.args()
