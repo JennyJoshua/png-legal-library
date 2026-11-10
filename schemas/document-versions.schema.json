@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "PNG Legal Library Document Version History",
-  "description": "Append-only provenance records for observed document files. Version records do not establish legal status or permission.",
+  "description": "Append-only provenance records for observed document files, including assessments attached to the exact version. A record does not itself establish legal authority or redistribution rights.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -116,6 +116,7 @@
         "verification_status": {
           "type": "string",
           "enum": [
+            "discovered",
             "pending_review",
             "verified",
             "verification_failed"
@@ -133,6 +134,32 @@
             "null"
           ],
           "format": "date-time"
+        },
+        "last_verified_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "legal_status": {
+          "type": "string",
+          "enum": [
+            "in_force",
+            "amended",
+            "partially_repealed",
+            "repealed",
+            "superseded",
+            "not_yet_in_force",
+            "status_unknown",
+            "not_applicable"
+          ]
+        },
+        "legal_status_evidence": {
+          "type": [
+            "string",
+            "null"
+          ]
         }
       }
     }
