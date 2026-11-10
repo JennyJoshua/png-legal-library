@@ -137,6 +137,71 @@ def validate_discovery_report(report):
                 )
 
 
+def build_source_observation(source_metadata, discovered, observed_at):
+    """Build one source-specific provenance observation."""
+    return {
+        **{key: source_metadata.get(key) for key in (
+            "source_id", "source_name", "source_url", "source_type",
+            "source_review_status"
+        )},
+        "url": discovered.get("url"),
+        "final_url": discovered.get("final_url"),
+        "discovery_method": discovered.get("discovery_method"),
+        "technical_access": discovered.get("technical_access", "not_checked"),
+        "http_status": discovered.get("http_status"),
+        "access_error": discovered.get("access_error"),
+        "first_seen_at": observed_at,
+        "last_seen_at": observed_at,
+    }
+
+
+def upsert_source_observation(candidate, observation):
+    """Retain every distinct source attribution and refresh its latest check."""
+    observations = candidate.setdefault("source_observations", [])
+
+    # Migrate the legacy primary attribution into the new provenance list
+    # before adding another source, without changing the primary fields.
+    if not observations and candidate.get("source_id"):
+        legacy = {
+            "source_id": candidate.get("source_id"),
+            "source_name": candidate.get("source_name"),
+            "source_url": candidate.get("source_url"),
+            "source_type": candidate.get("source_type"),
+            "source_review_status": candidate.get("source_review_status"),
+            "url": candidate.get("url"),
+            "final_url": candidate.get("final_url"),
+            "discovery_method": candidate.get("discovery_method"),
+            "technical_access": candidate.get("technical_access", "not_checked"),
+            "http_status": candidate.get("http_status"),
+            "access_error": candidate.get("access_error"),
+            "first_seen_at": None,
+            "last_seen_at": None,
+        }
+        observations.append(legacy)
+
+    key = (observation.get("source_id"), observation.get("url"))
+    existing = next(
+        (item for item in observations
+         if (item.get("source_id"), item.get("url")) == key),
+        None,
+    )
+
+    if existing is None:
+        observations.append(observation)
+        return True
+
+    changed = False
+    for field, value in observation.items():
+        if field == "first_seen_at":
+            if not existing.get(field):
+                existing[field] = value
+                changed = True
+        elif existing.get(field) != value:
+            existing[field] = value
+            changed = True
+    return changed
+
+
 def merge_candidates(report, queue):
     """Add candidates and refresh discovery metadata without approval."""
     candidates = queue["candidates"]
@@ -171,7 +236,7 @@ def merge_candidates(report, queue):
     discovered_count = 0
     new_count = 0
     refreshed_count = 0
-    seen_this_run = set()
+    observations_added = 0
 
     # These are observations, not human review decisions.
     refresh_fields = (
@@ -201,7 +266,11 @@ def merge_candidates(report, queue):
         for discovered in source.get("candidates", []):
             discovered_count += 1
             candidate_id = discovered["candidate_id"]
+            observed_at = report.get("generated_at")
 
+            observation = build_source_observation(
+                source_metadata, discovered, observed_at
+            )
             existing = by_id.get(candidate_id)
 
             if existing is None:
@@ -230,21 +299,20 @@ def merge_candidates(report, queue):
                     "legal_status": "status_unknown",
                     "legal_status_evidence": None,
                     "redistribution_permission": "unknown",
+                    "source_observations": [observation],
                 }
 
                 candidates.append(new_candidate)
                 by_id[candidate_id] = new_candidate
-                seen_this_run.add(candidate_id)
                 new_count += 1
+                observations_added += 1
                 continue
 
-            # Preserve the original source attribution if this URL appears
-            # under multiple sources during the same discovery run.
-            if candidate_id in seen_this_run:
-                continue
-
-            seen_this_run.add(candidate_id)
-            refreshed = False
+            # Preserve the legacy primary source fields. Every additional
+            # source is recorded as an independent observation instead.
+            refreshed = upsert_source_observation(existing, observation)
+            if refreshed:
+                observations_added += 1
 
             for field in refresh_fields:
                 value = discovered.get(field)
@@ -258,13 +326,6 @@ def merge_candidates(report, queue):
                     continue
 
                 if existing.get(field) != value:
-                    existing[field] = value
-                    refreshed = True
-
-            # Populate missing source details, but do not silently replace
-            # the provenance already recorded for an existing candidate.
-            for field, value in source_metadata.items():
-                if field not in existing and value is not None:
                     existing[field] = value
                     refreshed = True
 
@@ -297,6 +358,7 @@ def merge_candidates(report, queue):
     print(f"Discovery results processed: {discovered_count}")
     print(f"New candidates added: {new_count}")
     print(f"Existing candidates refreshed: {refreshed_count}")
+    print(f"Source observations added or refreshed: {observations_added}")
     print(f"Total candidates in queue: {len(candidates)}")
     print(f"Queue file changed: {'yes' if changed else 'no'}")
     print()
