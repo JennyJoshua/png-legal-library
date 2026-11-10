@@ -340,7 +340,10 @@ class SameHostRedirectHandler(HTTPRedirectHandler):
             or parsed.password
             or parsed.hostname.casefold() != self.original_host
             or (self.original_scheme == "https" and parsed.scheme.lower() != "https")
-            or parsed.port not in (None, 80, 443)
+            or (parsed.port is not None and not (
+                (parsed.scheme.lower() == "https" and parsed.port == 443)
+                or (parsed.scheme.lower() == "http" and parsed.port == 80)
+            ))
         ):
             raise UnsafeRedirectError(
                 "Redirect blocked: destination must remain on the original host and cannot downgrade HTTPS."
@@ -464,6 +467,8 @@ def inspect_page(url):
 
         if result.get("error") == "Blocked by robots.txt":
             metadata["access_result"] = "robots_disallowed"
+        elif (result.get("error") or "").startswith("Redirect blocked:"):
+            metadata["access_result"] = "redirect_blocked"
         elif status == 403:
             metadata["access_result"] = "forbidden"
         elif status == 404:
@@ -622,7 +627,11 @@ def inspect_homepage_links(base_url, host, found):
     if not result["ok"]:
         status = result.get("status")
 
-        if status == 403:
+        if (result.get("error") or "").startswith("Redirect blocked:"):
+            result_name = "redirect_blocked"
+        elif result.get("error") == "Blocked by robots.txt":
+            result_name = "robots_disallowed"
+        elif status == 403:
             result_name = "forbidden"
         elif status == 404:
             result_name = "not_found"
