@@ -1,6 +1,19 @@
 name: Discover PNG legal sources
 
 on:
+  pull_request:
+    branches: [phase10/legal-corpus-foundation]
+    paths:
+      - "sources/discovery-sources.yml"
+      - "scripts/discover-legal-sources.py"
+      - "scripts/merge-discovery-review-queue.py"
+      - "scripts/validate_documents.py"
+      - "schemas/source-registry.schema.json"
+      - "schemas/legal-resource-review-queue.schema.json"
+      - "tests/test_discovery_reliability.py"
+      - ".github/workflows/discover-legal-sources.yml"
+      - ".github/workflows/validate-documents.yml"
+
   workflow_dispatch:
 
   schedule:
@@ -8,7 +21,7 @@ on:
     - cron: "30 19 * * 2"
 
   push:
-    branches: [main]
+    branches: [main, phase10/legal-corpus-foundation]
     paths:
       - "sources/discovery-sources.yml"
       - "scripts/discover-legal-sources.py"
