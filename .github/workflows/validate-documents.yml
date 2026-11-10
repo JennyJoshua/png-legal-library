@@ -8,6 +8,7 @@ on:
       - phase4/segmentation-and-search
       - phase9/security-legal-safeguards
       - phase10/legal-corpus-foundation
+      - phase12/document-version-integrity
     paths:
       - 'data/documents.json'
       - 'data/document-versions.json'
