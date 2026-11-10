@@ -20,6 +20,7 @@ class DocumentIntakeTests(unittest.TestCase):
         self.register_path = self.base / "documents.json"
         self.history_path = self.base / "versions.json"
         self.sources_path = self.base / "sources.yml"
+        self.journal_path = self.base / ".intake-transaction.json"
         self.register_path.write_text(json.dumps({"schema_version": 1, "jurisdiction": "Papua New Guinea", "documents": []}))
         self.history_path.write_text(json.dumps({"history_version": "1.0", "jurisdiction": "Papua New Guinea", "versions": []}))
         self.sources_path.write_text("sources:\n  - source_id: png_parliament\n    url: https://parliament.gov.pg/\n")
@@ -30,6 +31,7 @@ class DocumentIntakeTests(unittest.TestCase):
             patch.object(intake, "REGISTER", self.register_path),
             patch.object(intake, "HISTORY", self.history_path),
             patch.object(intake, "SOURCE_REGISTRY", self.sources_path),
+            patch.object(intake, "TRANSACTION_JOURNAL", self.journal_path),
         ]
         for item in self.patches: item.start()
 
@@ -195,6 +197,37 @@ class DocumentVersionValidationTests(unittest.TestCase):
         history = {"history_version": "1.0", "jurisdiction": "Papua New Guinea", "versions": [first, second]}
         errors, _ = validator.validate_document_versions(history, self.schema, {"documents": [{"document_id": "sample-act"}]})
         self.assertTrue(any("Duplicate checksum" in error for error in errors))
+
+
+    def test_interrupted_two_register_commit_recovers_on_next_intake(self):
+        original_save = intake.save_json_atomic
+        calls = {"count": 0}
+
+        def fail_register_once(path, data):
+            calls["count"] += 1
+            if calls["count"] == 3:
+                raise OSError("simulated interruption during second register write")
+            return original_save(path, data)
+
+        with patch.object(intake, "save_json_atomic", side_effect=fail_register_once):
+            with self.assertRaises(OSError):
+                intake.intake(self.args())
+
+        self.assertTrue(self.journal_path.exists())
+        self.assertEqual(len(self.load(self.history_path)["versions"]), 1)
+        self.assertEqual(len(self.load(self.register_path)["documents"]), 0)
+
+        # The next intake first replays the complete journal, then detects
+        # that the exact file is already recorded and remains idempotent.
+        result = intake.intake(self.args())
+        self.assertEqual(result["result"], "already_recorded")
+        self.assertFalse(self.journal_path.exists())
+        self.assertEqual(len(self.load(self.history_path)["versions"]), 1)
+        self.assertEqual(len(self.load(self.register_path)["documents"]), 1)
+        document = self.load(self.register_path)["documents"][0]
+        version = self.load(self.history_path)["versions"][0]
+        self.assertEqual(document["current_version_id"], version["version_id"])
+        self.assertEqual(document["checksum_sha256"], version["checksum_sha256"])
 
 
 if __name__ == "__main__":
