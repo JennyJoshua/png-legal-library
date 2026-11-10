@@ -112,6 +112,27 @@
             "string",
             "null"
           ]
+        },
+        "verification_status": {
+          "type": "string",
+          "enum": [
+            "pending_review",
+            "verified",
+            "verification_failed"
+          ]
+        },
+        "verification_evidence": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "verified_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
         }
       }
     }
