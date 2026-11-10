@@ -308,9 +308,12 @@ class DiscoveryReliabilityTests(unittest.TestCase):
             discovery.CURRENT_ROBOTS_BLOCK_ALL = False
             with patch.object(discovery, "build_opener") as mocked:
                 result = discovery.fetch("https://example.org/private/act.pdf")
+                nested_robots = discovery.fetch("https://example.org/private/robots.txt")
                 mocked.assert_not_called()
             self.assertFalse(result["ok"])
             self.assertEqual(result["error"], "Blocked by robots.txt")
+            self.assertFalse(nested_robots["ok"])
+            self.assertEqual(nested_robots["error"], "Blocked by robots.txt")
         finally:
             discovery.CURRENT_ROBOTS_PARSER = old_parser
             discovery.CURRENT_ROBOTS_BLOCK_ALL = old_block
