@@ -10,6 +10,7 @@ import json
 import os
 import re
 import time
+import urllib.robotparser
 import xml.etree.ElementTree as ET
 
 from datetime import datetime, timezone
@@ -25,7 +26,7 @@ from urllib.parse import (
     urldefrag,
     parse_qsl,
 )
-from urllib.request import Request, urlopen
+from urllib.request import Request, build_opener, HTTPRedirectHandler
 
 try:
     import yaml
@@ -60,6 +61,8 @@ SOURCE_BUDGET_SECONDS = _env_int("PNG_DISCOVERY_SOURCE_BUDGET_SECONDS", 75, 10, 
 RUN_BUDGET_SECONDS = _env_int("PNG_DISCOVERY_RUN_BUDGET_SECONDS", 480, 30, 600)
 RUN_DEADLINE = None
 CURRENT_SOURCE_DEADLINE = None
+CURRENT_ROBOTS_PARSER = None
+CURRENT_ROBOTS_BLOCK_ALL = False
 USER_AGENT = "PNG-Legal-Library-Discovery/2.2"
 
 TRACKING_PARAMETERS = {
@@ -314,6 +317,39 @@ def classify_candidate(url, title=""):
     return "legal_related_page_unclassified"
 
 
+
+class UnsafeRedirectError(Exception):
+    """Raised when a source attempts to redirect discovery off its host."""
+
+
+class SameHostRedirectHandler(HTTPRedirectHandler):
+    """Allow only credential-free, same-host redirects without HTTPS downgrade."""
+
+    def __init__(self, original_url):
+        super().__init__()
+        parsed = urlparse(original_url)
+        self.original_host = (parsed.hostname or "").casefold()
+        self.original_scheme = parsed.scheme.lower()
+
+    def redirect_request(self, request, response, code, message, headers, newurl):
+        parsed = urlparse(newurl)
+        if (
+            parsed.scheme.lower() not in ("http", "https")
+            or not parsed.hostname
+            or parsed.username
+            or parsed.password
+            or parsed.hostname.casefold() != self.original_host
+            or (self.original_scheme == "https" and parsed.scheme.lower() != "https")
+            or parsed.port not in (None, 80, 443)
+        ):
+            raise UnsafeRedirectError(
+                "Redirect blocked: destination must remain on the original host and cannot downgrade HTTPS."
+            )
+        return super().redirect_request(
+            request, response, code, message, headers, newurl
+        )
+
+
 def fetch(url):
     """Fetch a public resource without bypassing access controls."""
 
@@ -324,6 +360,13 @@ def fetch(url):
             return {"ok": False, "status": None, "error": "Discovery time budget exhausted"}
 
         parsed = urlparse(url)
+
+        is_robots_file = parsed.path.rstrip("/").lower().endswith("/robots.txt")
+        if not is_robots_file:
+            if CURRENT_ROBOTS_BLOCK_ALL:
+                return {"ok": False, "status": None, "error": "Blocked because robots.txt could not be retrieved safely"}
+            if CURRENT_ROBOTS_PARSER is not None and not CURRENT_ROBOTS_PARSER.can_fetch(USER_AGENT, url):
+                return {"ok": False, "status": None, "error": "Blocked by robots.txt"}
 
         if (
             parsed.scheme.lower() not in ("http", "https")
@@ -344,7 +387,8 @@ def fetch(url):
 
         remaining = min(deadlines) - now if deadlines else TIMEOUT
         request_timeout = max(0.1, min(TIMEOUT, remaining))
-        with urlopen(request, timeout=request_timeout) as response:
+        opener = build_opener(SameHostRedirectHandler(url))
+        with opener.open(request, timeout=request_timeout) as response:
             body = response.read(MAX_BYTES + 1)
 
             if len(body) > MAX_BYTES:
@@ -359,6 +403,9 @@ def fetch(url):
                 ),
                 "body": body,
             }
+
+    except UnsafeRedirectError as exc:
+        return {"ok": False, "status": None, "error": str(exc)}
 
     except HTTPError as exc:
         return {
@@ -415,7 +462,9 @@ def inspect_page(url):
     if not result["ok"]:
         status = result.get("status")
 
-        if status == 403:
+        if result.get("error") == "Blocked by robots.txt":
+            metadata["access_result"] = "robots_disallowed"
+        elif status == 403:
             metadata["access_result"] = "forbidden"
         elif status == 404:
             metadata["access_result"] = "not_found"
@@ -478,8 +527,11 @@ def parse_sitemap(data):
 
 
 def get_sitemap_urls(base_url, host):
-    """Find sitemap locations without crawling external hosts."""
+    """Load source robots policy and find same-host sitemap locations."""
+    global CURRENT_ROBOTS_PARSER, CURRENT_ROBOTS_BLOCK_ALL
 
+    CURRENT_ROBOTS_PARSER = None
+    CURRENT_ROBOTS_BLOCK_ALL = False
     root = base_url.rstrip("/") + "/"
 
     robots_url = safe_urljoin(root, "robots.txt")
@@ -496,9 +548,10 @@ def get_sitemap_urls(base_url, host):
         robots = fetch(robots_url)
 
         if robots["ok"]:
-            text = robots["body"].decode(
-                "utf-8", errors="replace"
-            )
+            text = robots["body"].decode("utf-8", errors="replace")
+            CURRENT_ROBOTS_PARSER = __import__("urllib.robotparser", fromlist=["RobotFileParser"]).RobotFileParser()
+            CURRENT_ROBOTS_PARSER.set_url(robots_url)
+            CURRENT_ROBOTS_PARSER.parse(text.splitlines())
 
             for line in text.splitlines():
                 if line.lower().startswith("sitemap:"):
@@ -507,6 +560,13 @@ def get_sitemap_urls(base_url, host):
 
                     if normalized and same_host(normalized, host):
                         sitemap_urls.append(normalized)
+        elif robots.get("status") == 404:
+            # A missing robots file has no published crawl restrictions.
+            CURRENT_ROBOTS_PARSER = __import__("urllib.robotparser", fromlist=["RobotFileParser"]).RobotFileParser()
+            CURRENT_ROBOTS_PARSER.parse([])
+        else:
+            # Fail closed when robots policy cannot be retrieved reliably.
+            CURRENT_ROBOTS_BLOCK_ALL = True
 
     return list(dict.fromkeys(sitemap_urls))[:MAX_SITEMAPS_PER_SOURCE]
 
@@ -673,11 +733,12 @@ def discover_source(source):
 
     found = {}
 
+    # Load robots.txt before requesting the homepage or any candidate URL.
+    sitemap_urls = get_sitemap_urls(base_url, host)
+
     output["homepage_check"] = inspect_homepage_links(
         base_url, host, found
     )
-
-    sitemap_urls = get_sitemap_urls(base_url, host)
     visited_sitemaps = set()
 
     for sitemap_url in sitemap_urls:
