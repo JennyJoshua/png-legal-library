@@ -82,6 +82,13 @@ sources:
     discovery_scope: [organic_laws, provincial_government_acts, local_level_government_acts, public_finance_law, intergovernmental_fiscal_law]
     review_status: candidate
     redistribution_permission: unknown
+  - source_id: vlex_png
+    name: vLex Papua New Guinea legal database
+    url: https://vlex.com/
+    source_type: legal_information_service
+    discovery_scope: [court_judgments, legal_research]
+    review_status: needs_verification
+    redistribution_permission: unknown
   - source_id: pngiportal_gazette_archive
     name: PNGi Portal National Gazette archive
     url: https://pngiportal.org/
