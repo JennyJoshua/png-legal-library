@@ -158,5 +158,21 @@ class DiscoveryReliabilityTests(unittest.TestCase):
         self.assertIn("upload-artifact", workflow)
 
 
+    def test_discovery_workflow_runs_on_phase10_pull_requests(self):
+        workflow = (ROOT / ".github" / "workflows" / "discover-legal-sources.yml").read_text()
+        self.assertIn("pull_request:", workflow)
+        self.assertIn("phase10/legal-corpus-foundation", workflow)
+        self.assertIn("tests/test_discovery_reliability.py", workflow)
+        self.assertIn("contents: read", workflow)
+
+    def test_validation_workflow_covers_discovery_changes_on_phase10(self):
+        workflow = (ROOT / ".github" / "workflows" / "validate-documents.yml").read_text()
+        self.assertIn("pull_request:", workflow)
+        self.assertIn("phase10/legal-corpus-foundation", workflow)
+        self.assertIn("scripts/discover-legal-sources.py", workflow)
+        self.assertIn("scripts/merge-discovery-review-queue.py", workflow)
+        self.assertIn("tests/test_discovery_reliability.py", workflow)
+
+
 if __name__ == "__main__":
     unittest.main()

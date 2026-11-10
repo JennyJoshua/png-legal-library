@@ -50,11 +50,17 @@ on:
       - 'docs/legal-library-portal.md'
       - 'docs/legal-qa-citations.md'
       - 'docs/legal-research-agent.md'
+      - 'scripts/discover-legal-sources.py'
+      - 'scripts/merge-discovery-review-queue.py'
+      - 'tests/test_discovery_reliability.py'
+      - '.github/workflows/discover-legal-sources.yml'
       - '.github/workflows/validate-documents.yml'
 
   pull_request:
     branches:
       - main
+      - phase10/legal-corpus-foundation
+      - phase12/pipeline-reliability
     paths:
       - 'data/documents.json'
       - 'data/document-versions.json'
@@ -97,6 +103,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v5
