@@ -288,14 +288,23 @@ class DiscoveryReliabilityTests(unittest.TestCase):
         from urllib.request import Request
         handler = discovery.SameHostRedirectHandler("https://example.org/start")
         request = Request("https://example.org/start")
-        with self.assertRaises(discovery.UnsafeRedirectError):
-            handler.redirect_request(
-                request, None, 302, "Found", {}, "https://attacker.example/collect"
-            )
-        with self.assertRaises(discovery.UnsafeRedirectError):
-            handler.redirect_request(
-                request, None, 302, "Found", {}, "http://example.org/insecure"
-            )
+        allowed = handler.redirect_request(
+            request, None, 302, "Found", {}, "https://example.org/legal/act"
+        )
+        self.assertEqual(allowed.full_url, "https://example.org/legal/act")
+
+        blocked_destinations = (
+            "https://attacker.example/collect",
+            "http://example.org/insecure",
+            "https://user:password@example.org/private",
+            "https://example.org:8443/private",
+        )
+        for destination in blocked_destinations:
+            with self.subTest(destination=destination):
+                with self.assertRaises(discovery.UnsafeRedirectError):
+                    handler.redirect_request(
+                        request, None, 302, "Found", {}, destination
+                    )
 
     def test_fetch_respects_robots_disallow_without_network_request(self):
         from urllib.robotparser import RobotFileParser
