@@ -96,6 +96,7 @@ class DocumentIntakeTests(unittest.TestCase):
         intake.intake(self.args())
         data = self.load(self.register_path)
         data["documents"][0]["verification_status"] = "verified"
+        data["documents"][0]["last_verified_date"] = "2026-11-09"
         data["documents"][0]["legal_status"] = "in_force"
         data["documents"][0]["legal_status_evidence"] = "review evidence"
         data["documents"][0]["reviewer_notes"] = "Do not overwrite this note"
@@ -111,6 +112,12 @@ class DocumentIntakeTests(unittest.TestCase):
         versions = self.load(self.history_path)["versions"]
         self.assertEqual(doc["current_version_id"], versions[-1]["version_id"])
         self.assertEqual(versions[-1]["verification_status"], "pending_review")
+        self.assertEqual(versions[-1]["legal_status"], "status_unknown")
+        self.assertIsNone(versions[-1]["legal_status_evidence"])
+        self.assertEqual(versions[0]["verification_status"], "verified")
+        self.assertEqual(versions[0]["last_verified_date"], "2026-11-09")
+        self.assertEqual(versions[0]["legal_status"], "in_force")
+        self.assertEqual(versions[0]["legal_status_evidence"], "review evidence")
 
     def test_unknown_source_rejected(self):
         args = self.args()
