@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - phase3/document-processing
+      - phase12/discovery-source-compliance-v3
       - phase4/segmentation-and-search
       - phase9/security-legal-safeguards
       - phase10/legal-corpus-foundation
