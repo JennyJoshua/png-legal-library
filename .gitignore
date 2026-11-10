@@ -11,3 +11,7 @@ search-index/
 # Python runtime artifacts.
 __pycache__/
 *.py[cod]
+
+# Recovery journal for an interrupted local intake transaction.
+data/.intake-transaction.json
+data/.intake-transaction.json.tmp
