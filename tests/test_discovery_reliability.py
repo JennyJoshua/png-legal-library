@@ -158,5 +158,52 @@ class DiscoveryReliabilityTests(unittest.TestCase):
         self.assertIn("upload-artifact", workflow)
 
 
+    def test_redirect_handler_blocks_cross_host_and_https_downgrade(self):
+        from urllib.request import Request
+        handler = discovery.SameHostRedirectHandler("https://example.org/start")
+        request = Request("https://example.org/start")
+        with self.assertRaises(discovery.UnsafeRedirectError):
+            handler.redirect_request(
+                request, None, 302, "Found", {}, "https://attacker.example/collect"
+            )
+        with self.assertRaises(discovery.UnsafeRedirectError):
+            handler.redirect_request(
+                request, None, 302, "Found", {}, "http://example.org/insecure"
+            )
+
+    def test_fetch_respects_robots_disallow_without_network_request(self):
+        from urllib.robotparser import RobotFileParser
+        parser = RobotFileParser()
+        parser.parse(["User-agent: *", "Disallow: /private"])
+        old_parser = discovery.CURRENT_ROBOTS_PARSER
+        old_block = discovery.CURRENT_ROBOTS_BLOCK_ALL
+        try:
+            discovery.CURRENT_ROBOTS_PARSER = parser
+            discovery.CURRENT_ROBOTS_BLOCK_ALL = False
+            with patch.object(discovery, "build_opener") as mocked:
+                result = discovery.fetch("https://example.org/private/act.pdf")
+                mocked.assert_not_called()
+            self.assertFalse(result["ok"])
+            self.assertEqual(result["error"], "Blocked by robots.txt")
+        finally:
+            discovery.CURRENT_ROBOTS_PARSER = old_parser
+            discovery.CURRENT_ROBOTS_BLOCK_ALL = old_block
+
+    def test_fetch_fails_closed_when_robots_policy_unavailable(self):
+        old_parser = discovery.CURRENT_ROBOTS_PARSER
+        old_block = discovery.CURRENT_ROBOTS_BLOCK_ALL
+        try:
+            discovery.CURRENT_ROBOTS_PARSER = None
+            discovery.CURRENT_ROBOTS_BLOCK_ALL = True
+            with patch.object(discovery, "build_opener") as mocked:
+                result = discovery.fetch("https://example.org/law.pdf")
+                mocked.assert_not_called()
+            self.assertFalse(result["ok"])
+            self.assertIn("robots.txt", result["error"])
+        finally:
+            discovery.CURRENT_ROBOTS_PARSER = old_parser
+            discovery.CURRENT_ROBOTS_BLOCK_ALL = old_block
+
+
 if __name__ == "__main__":
     unittest.main()
