@@ -364,12 +364,10 @@ def fetch(url):
 
         parsed = urlparse(url)
 
-        is_robots_file = parsed.path.rstrip("/").lower().endswith("/robots.txt")
-        if not is_robots_file:
-            if CURRENT_ROBOTS_BLOCK_ALL:
-                return {"ok": False, "status": None, "error": "Blocked because robots.txt could not be retrieved safely"}
-            if CURRENT_ROBOTS_PARSER is not None and not CURRENT_ROBOTS_PARSER.can_fetch(USER_AGENT, url):
-                return {"ok": False, "status": None, "error": "Blocked by robots.txt"}
+        if CURRENT_ROBOTS_BLOCK_ALL:
+            return {"ok": False, "status": None, "error": "Blocked because robots.txt could not be retrieved safely"}
+        if CURRENT_ROBOTS_PARSER is not None and not CURRENT_ROBOTS_PARSER.can_fetch(USER_AGENT, url):
+            return {"ok": False, "status": None, "error": "Blocked by robots.txt"}
 
         if (
             parsed.scheme.lower() not in ("http", "https")
