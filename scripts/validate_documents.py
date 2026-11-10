@@ -399,6 +399,11 @@ def validate_document_versions(history, schema, register):
             errors.append(
                 f"Document {document_id}: verification_status does not match the current version."
             )
+        for field in ("last_verified_date", "legal_status", "legal_status_evidence"):
+            if field in latest and document.get(field) != latest.get(field):
+                errors.append(
+                    f"Document {document_id}: {field} does not match the current version."
+                )
 
     return errors, len(history.get("versions", []))
 
