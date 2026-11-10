@@ -20,6 +20,7 @@ from uuid import uuid4
 ROOT = Path(__file__).resolve().parent.parent
 REGISTER = ROOT / "data" / "documents.json"
 HISTORY = ROOT / "data" / "document-versions.json"
+TRANSACTION_JOURNAL = ROOT / "data" / ".intake-transaction.json"
 SOURCE_REGISTRY = ROOT / "sources" / "discovery-sources.yml"
 MAX_FILE_BYTES = 100 * 1024 * 1024
 ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
@@ -35,6 +36,40 @@ def save_json_atomic(path, data):
     temp = path.with_suffix(path.suffix + ".tmp")
     temp.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     temp.replace(path)
+
+
+
+def recover_pending_transaction():
+    """Replay a staged two-register update after an interrupted intake."""
+    if not TRANSACTION_JOURNAL.exists():
+        return False
+
+    journal = load_json(TRANSACTION_JOURNAL)
+    if (
+        not isinstance(journal, dict)
+        or journal.get("transaction_version") != 1
+        or not isinstance(journal.get("documents"), dict)
+        or not isinstance(journal.get("versions"), dict)
+    ):
+        raise ValueError("Pending intake transaction journal is invalid; manual recovery is required.")
+
+    # The journal is retained until both writes complete. Replaying both
+    # complete snapshots is safe if either target was already replaced.
+    save_json_atomic(HISTORY, journal["versions"])
+    save_json_atomic(REGISTER, journal["documents"])
+    TRANSACTION_JOURNAL.unlink()
+    return True
+
+
+def commit_registers_transactionally(register, history):
+    """Commit both register snapshots with a replayable recovery journal."""
+    journal = {
+        "transaction_version": 1,
+        "documents": register,
+        "versions": history,
+    }
+    save_json_atomic(TRANSACTION_JOURNAL, journal)
+    recover_pending_transaction()
 
 
 def sha256_file(path):
@@ -65,6 +100,9 @@ def parse_args(argv=None):
 
 
 def intake(args):
+    # Complete an earlier interrupted write before reading either register.
+    recover_pending_transaction()
+
     if not ID_PATTERN.fullmatch(args.document_id):
         raise ValueError("document-id must use lowercase letters, digits, dots, underscores or hyphens.")
     supplied_url = urlsplit(args.source_url)
@@ -166,8 +204,7 @@ def intake(args):
         "verification_status": "pending_review", "verification_evidence": None, "verified_at": None
     }
     history["versions"].append(version)
-    save_json_atomic(HISTORY, history)
-    save_json_atomic(REGISTER, register)
+    commit_registers_transactionally(register, history)
     return {"result": "recorded", "version_id": version_id, "version_number": version_number,
             "checksum_sha256": checksum, "archived": archived_path is not None,
             "review_status": "pending_review", "legal_status": "status_unknown"}
