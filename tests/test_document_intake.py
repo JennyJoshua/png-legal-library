@@ -89,7 +89,6 @@ class DocumentIntakeTests(unittest.TestCase):
         self.assertFalse((self.base / ".private").exists())
 
     def test_interrupted_archive_copy_never_leaves_partial_final_file(self):
-        original_copy = intake.shutil.copyfile
         archive = self.base / ".private" / "legal-documents" / "sample-act"
         def fail_after_partial_copy(source, destination):
             Path(destination).write_bytes(b"partial")
@@ -97,8 +96,8 @@ class DocumentIntakeTests(unittest.TestCase):
         with patch.object(intake.shutil, "copyfile", side_effect=fail_after_partial_copy):
             with self.assertRaisesRegex(OSError, "simulated interruption"):
                 intake.intake(self.args("permitted"))
-        self.assertFalse(any(archive.glob("*")) if archive.exists() else False)
-        self.assertFalse((self.base / ".private" / "legal-documents" / "sample-act" / "partial.tmp").exists())
+        self.assertEqual(list(archive.iterdir()), [])
+        self.assertFalse(self.journal_path.exists())
         self.assertEqual(len(self.load(self.register_path)["documents"]), 0)
         self.assertEqual(len(self.load(self.history_path)["versions"]), 0)
 
