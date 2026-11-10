@@ -205,5 +205,14 @@ class DiscoveryReliabilityTests(unittest.TestCase):
             discovery.CURRENT_ROBOTS_BLOCK_ALL = old_block
 
 
+    def test_inspect_page_reports_redirect_blocks_distinctly(self):
+        with patch.object(discovery, "fetch", return_value={
+            "ok": False, "status": None,
+            "error": "Redirect blocked: destination must remain on the original host."
+        }):
+            result = discovery.inspect_page("https://example.org/legal/act")
+        self.assertEqual(result["access_result"], "redirect_blocked")
+
+
 if __name__ == "__main__":
     unittest.main()
