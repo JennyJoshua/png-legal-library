@@ -22,7 +22,7 @@ Refer to the milestone-specific documents for exact commands and schemas. Extrac
 
 | Gate | Status | Notes |
 |---|---|---|
-| Milestone branches and files present | Reviewed | Branch comparison confirms the phase 9 branch contains the earlier milestone files. |
+| Milestone branches and files present | Reviewed | Current Phase 10 integration branch contains the milestone modules and Phase 12 changes reviewed in this report. |
 | Portal and usage documentation | Present | Static local browser portal; no hosted deployment. |
 | Security changes | Partially verified | Phase 12 transaction journal and single-writer lock are implemented and covered by CI; TOCTOU and retrieval-index resource limits remain open. See `docs/security-and-legal-safeguards.md`. |
 | Full automated test suite | CI passed for current integration commit | GitHub Actions run #64 completed successfully on merge commit `0ee257abdc84211df1b174232c4116b9924897df`; inspect the workflow job logs for the executed test steps. |
