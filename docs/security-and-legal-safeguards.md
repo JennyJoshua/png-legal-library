@@ -27,7 +27,7 @@ This milestone reviews the current local document-intake, extraction, retrieval,
 - **Source authenticity and legal currency remain manual review tasks.** The system does not determine commencement, amendments, repeal, consolidation, or whether an instrument is currently in force.
 - **File TOCTOU risk:** checking a path for symlink status and then reopening it leaves a small race window. A hardened file-open implementation using no-follow flags and file-descriptor-based size/hash/copy checks should be considered before handling untrusted bulk uploads.
 - **Index resource limits:** retrieval currently reads the JSON index into memory without an explicit index-file byte limit. Add a bounded index size and record-count limit before accepting large or hostile indexes.
-- **Archive and register writes:** the two JSON registers are replaced separately. A crash between writes can leave history and catalogue out of sync; a recovery/transaction strategy is needed.
+- **Archive and register writes:** intake now uses a replayable transaction journal and atomic replacement of each register; the journal is retained until both snapshots are written and is replayed on the next intake after interruption. An exclusive local lock prevents concurrent intake writers from overwriting one another. Abrupt termination can leave a stale lock that requires an operator to confirm no process is active before removing it. This is not a distributed lock for shared multi-machine storage.
 - **No authentication or hosted deployment:** the portal is local-only. If deployed publicly, access control, transport security, rate limits, logging, privacy review, backups, and security testing are required.
 - **No legal professional review:** human legal review and authoritative-source checks remain necessary before publishing or relying on legal content.
 
@@ -36,3 +36,8 @@ Code changes and regression tests are committed to this branch. Test execution m
 
 ## Operating rule
 Do not ingest personal case details, client identities, confidential correspondence, or privileged documents into a future hosted or third-party AI service without a separate privacy and legal approval. No paid service or API is authorised by this milestone.
+
+
+## Intake reliability update — 2026-11-11
+
+The Phase 12-D transaction-safe intake change adds journal-based recovery and checksum-verified temporary archive publication. A follow-up single-writer lock now prevents concurrent intake processes from loading and overwriting the same register snapshots. The lock is local to one working copy; it is not a distributed coordination mechanism. These controls reduce write-corruption risks but do not constitute a security certification.

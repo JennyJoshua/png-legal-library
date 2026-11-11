@@ -20,6 +20,8 @@ class DocumentIntakeTests(unittest.TestCase):
         self.register_path = self.base / "documents.json"
         self.history_path = self.base / "versions.json"
         self.sources_path = self.base / "sources.yml"
+        self.journal_path = self.base / ".intake-transaction.json"
+        self.lock_path = self.base / ".intake.lock"
         self.register_path.write_text(json.dumps({"schema_version": 1, "jurisdiction": "Papua New Guinea", "documents": []}))
         self.history_path.write_text(json.dumps({"history_version": "1.0", "jurisdiction": "Papua New Guinea", "versions": []}))
         self.sources_path.write_text("sources:\n  - source_id: png_parliament\n    url: https://parliament.gov.pg/\n")
@@ -30,6 +32,8 @@ class DocumentIntakeTests(unittest.TestCase):
             patch.object(intake, "REGISTER", self.register_path),
             patch.object(intake, "HISTORY", self.history_path),
             patch.object(intake, "SOURCE_REGISTRY", self.sources_path),
+            patch.object(intake, "TRANSACTION_JOURNAL", self.journal_path),
+            patch.object(intake, "INTAKE_LOCK", self.lock_path),
         ]
         for item in self.patches: item.start()
 
@@ -48,6 +52,23 @@ class DocumentIntakeTests(unittest.TestCase):
 
     def load(self, path):
         return json.loads(path.read_text())
+
+    def test_existing_intake_lock_blocks_second_writer_without_mutation(self):
+        self.lock_path.write_text(json.dumps({
+            "token": "another-process",
+            "pid": 12345,
+            "created_at": "2026-11-11T00:00:00+00:00"
+        }))
+        with self.assertRaisesRegex(ValueError, "Another intake is running"):
+            intake.intake(self.args())
+        self.assertEqual(self.load(self.register_path)["documents"], [])
+        self.assertEqual(self.load(self.history_path)["versions"], [])
+        self.assertTrue(self.lock_path.exists())
+
+    def test_intake_releases_its_lock_after_success(self):
+        result = intake.intake(self.args())
+        self.assertEqual(result["result"], "recorded")
+        self.assertFalse(self.lock_path.exists())
 
     def test_new_intake_creates_pending_record_and_checksum(self):
         result = intake.intake(self.args())
@@ -86,6 +107,19 @@ class DocumentIntakeTests(unittest.TestCase):
         self.assertFalse(result["archived"])
         self.assertFalse((self.base / ".private").exists())
 
+    def test_interrupted_archive_copy_never_leaves_partial_final_file(self):
+        archive = self.base / ".private" / "legal-documents" / "sample-act"
+        def fail_after_partial_copy(source, destination):
+            Path(destination).write_bytes(b"partial")
+            raise OSError("simulated interruption during archive copy")
+        with patch.object(intake.shutil, "copyfile", side_effect=fail_after_partial_copy):
+            with self.assertRaisesRegex(OSError, "simulated interruption"):
+                intake.intake(self.args("permitted"))
+        self.assertEqual(list(archive.iterdir()), [])
+        self.assertFalse(self.journal_path.exists())
+        self.assertEqual(len(self.load(self.register_path)["documents"]), 0)
+        self.assertEqual(len(self.load(self.history_path)["versions"]), 0)
+
     def test_explicit_permitted_archives_private_copy(self):
         result = intake.intake(self.args("permitted"))
         self.assertTrue(result["archived"])
@@ -118,6 +152,36 @@ class DocumentIntakeTests(unittest.TestCase):
         self.assertEqual(versions[0]["last_verified_date"], "2026-11-09")
         self.assertEqual(versions[0]["legal_status"], "in_force")
         self.assertEqual(versions[0]["legal_status_evidence"], "review evidence")
+
+    def test_interrupted_two_register_commit_recovers_on_next_intake(self):
+        original_save = intake.save_json_atomic
+        calls = {"count": 0}
+
+        def fail_register_once(path, data):
+            calls["count"] += 1
+            if calls["count"] == 3:
+                raise OSError("simulated interruption during second register write")
+            return original_save(path, data)
+
+        with patch.object(intake, "save_json_atomic", side_effect=fail_register_once):
+            with self.assertRaises(OSError):
+                intake.intake(self.args())
+
+        self.assertTrue(self.journal_path.exists())
+        self.assertEqual(len(self.load(self.history_path)["versions"]), 1)
+        self.assertEqual(len(self.load(self.register_path)["documents"]), 0)
+
+        # The next intake replays the complete journal, then recognises the
+        # already-recorded file without creating a duplicate version.
+        result = intake.intake(self.args())
+        self.assertEqual(result["result"], "already_recorded")
+        self.assertFalse(self.journal_path.exists())
+        self.assertEqual(len(self.load(self.history_path)["versions"]), 1)
+        self.assertEqual(len(self.load(self.register_path)["documents"]), 1)
+        document = self.load(self.register_path)["documents"][0]
+        version = self.load(self.history_path)["versions"][0]
+        self.assertEqual(document["current_version_id"], version["version_id"])
+        self.assertEqual(document["checksum_sha256"], version["checksum_sha256"])
 
     def test_unknown_source_rejected(self):
         args = self.args()

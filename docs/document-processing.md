@@ -87,3 +87,11 @@ The extraction result is checked against `schemas/extraction-result.schema.json`
 - PDF extraction cannot guarantee perfect reading order in multi-column layouts, forms, marginalia, handwriting, or complex tables.
 - Page/paragraph references are navigational aids, not a substitute for checking the original source.
 - Extraction does not determine whether a document is current, in force, amended, authentic, or legally reusable.
+
+## Safe document intake and single-writer operation
+
+The intake command uses an exclusive lock file at `data/.intake.lock`. Only one intake process may update the document register and version history at a time. A second process fails closed before reading or changing either register.
+
+The lock is released after a normal success or handled failure. If the process or machine stops abruptly, the lock may remain. Before removing a leftover lock, confirm that no intake process is still running. Then remove only `data/.intake.lock` and rerun intake; the command will first replay any pending `data/.intake-transaction.json` journal. **Do not delete the transaction journal** as a way to clear a stale lock.
+
+The lock prevents concurrent intake writers on a single local working copy. It is not a distributed lock for multiple machines or shared network filesystems.

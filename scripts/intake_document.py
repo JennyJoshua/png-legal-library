@@ -9,6 +9,7 @@ import argparse
 import hashlib
 import json
 import mimetypes
+import os
 import re
 import shutil
 import sys
@@ -20,6 +21,8 @@ from uuid import uuid4
 ROOT = Path(__file__).resolve().parent.parent
 REGISTER = ROOT / "data" / "documents.json"
 HISTORY = ROOT / "data" / "document-versions.json"
+TRANSACTION_JOURNAL = ROOT / "data" / ".intake-transaction.json"
+INTAKE_LOCK = ROOT / "data" / ".intake.lock"
 SOURCE_REGISTRY = ROOT / "sources" / "discovery-sources.yml"
 MAX_FILE_BYTES = 100 * 1024 * 1024
 ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
@@ -35,6 +38,39 @@ def save_json_atomic(path, data):
     temp = path.with_suffix(path.suffix + ".tmp")
     temp.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     temp.replace(path)
+
+
+def recover_pending_transaction():
+    """Replay a staged two-register update after an interrupted intake."""
+    if not TRANSACTION_JOURNAL.exists():
+        return False
+
+    journal = load_json(TRANSACTION_JOURNAL)
+    if (
+        not isinstance(journal, dict)
+        or journal.get("transaction_version") != 1
+        or not isinstance(journal.get("documents"), dict)
+        or not isinstance(journal.get("versions"), dict)
+    ):
+        raise ValueError("Pending intake transaction journal is invalid; manual recovery is required.")
+
+    # Keep the journal until both snapshots are safely replaced. Replaying
+    # both complete snapshots is safe if either write already completed.
+    save_json_atomic(HISTORY, journal["versions"])
+    save_json_atomic(REGISTER, journal["documents"])
+    TRANSACTION_JOURNAL.unlink()
+    return True
+
+
+def commit_registers_transactionally(register, history):
+    """Commit both register snapshots with a replayable recovery journal."""
+    journal = {
+        "transaction_version": 1,
+        "documents": register,
+        "versions": history,
+    }
+    save_json_atomic(TRANSACTION_JOURNAL, journal)
+    recover_pending_transaction()
 
 
 def sha256_file(path):
@@ -65,6 +101,41 @@ def parse_args(argv=None):
 
 
 def intake(args):
+    """Run one intake at a time; fail closed if another process owns the lock."""
+    token = uuid4().hex
+    try:
+        lock_fd = os.open(str(INTAKE_LOCK), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+    except FileExistsError as exc:
+        raise ValueError(
+            "Another intake is running or a previous intake left a lock. "
+            "Confirm no intake process is active before removing data/.intake.lock."
+        ) from exc
+
+    try:
+        with os.fdopen(lock_fd, "w", encoding="utf-8") as lock_file:
+            json.dump({
+                "token": token,
+                "pid": os.getpid(),
+                "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            }, lock_file)
+            lock_file.flush()
+            os.fsync(lock_file.fileno())
+        return _intake_without_lock(args)
+    finally:
+        # Remove only the lock created by this process. Abrupt termination
+        # leaves it in place for deliberate operator recovery.
+        try:
+            lock_data = load_json(INTAKE_LOCK)
+            if isinstance(lock_data, dict) and lock_data.get("token") == token:
+                INTAKE_LOCK.unlink()
+        except (FileNotFoundError, OSError, ValueError):
+            pass
+
+
+def _intake_without_lock(args):
+    # Recover a prior interrupted write before reading either register.
+    recover_pending_transaction()
+
     if not ID_PATTERN.fullmatch(args.document_id):
         raise ValueError("document-id must use lowercase letters, digits, dots, underscores or hyphens.")
     supplied_url = urlsplit(args.source_url)
@@ -154,7 +225,17 @@ def intake(args):
         if destination.exists() and sha256_file(destination) != checksum:
             raise ValueError("Archive destination already exists with a different checksum.")
         if not destination.exists():
-            shutil.copyfile(supplied, destination)
+            # Stage beside the final content-addressed path and publish only
+            # after checksum verification; crashes cannot expose partial files.
+            temporary_destination = destination.with_name(destination.name + ".tmp")
+            try:
+                shutil.copyfile(supplied, temporary_destination)
+                if sha256_file(temporary_destination) != checksum:
+                    raise ValueError("Archived copy checksum does not match the supplied file.")
+                temporary_destination.replace(destination)
+            finally:
+                if temporary_destination.exists():
+                    temporary_destination.unlink()
         archived_path = relative.as_posix()
 
     if existing is None:
@@ -195,8 +276,7 @@ def intake(args):
         "legal_status_evidence": None
     }
     history["versions"].append(version)
-    save_json_atomic(HISTORY, history)
-    save_json_atomic(REGISTER, register)
+    commit_registers_transactionally(register, history)
     return {"result": "recorded", "version_id": version_id, "version_number": version_number,
             "checksum_sha256": checksum, "archived": archived_path is not None,
             "review_status": "pending_review", "legal_status": "status_unknown"}
