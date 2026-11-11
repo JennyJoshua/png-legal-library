@@ -1,11 +1,11 @@
 # Milestone 10 — Integration and release-readiness report
 
 ## Scope reviewed
-Repository branch: `phase9/security-legal-safeguards`
-Base branch: `main`
-Review date: 2026-10-31
+Repository branch: `phase10/legal-corpus-foundation`
+Comparison branch: `main`
+Review date: 2026-11-11
 
-The branch contains the earlier document intake/versioning, extraction, segmentation, keyword index, evidence retrieval, research agent, cited Q&A, local browser portal, and Milestone 9 safeguard work. The branch is 52 commits ahead of `main` at the time of this report. No merge or deployment was performed.
+The reviewed integration branch contains the document intake/versioning, extraction, segmentation, keyword index, evidence retrieval, research agent, cited Q&A, local browser portal, Milestone 9 safeguards, Phase 12 provenance/version/discovery compliance, and transaction-safe intake work. GitHub comparison reports `phase10/legal-corpus-foundation` is 100 commits ahead of `main` (and `main` is 0 commits ahead of this branch) at the time of this review. This is a substantial integration gap, not approval to merge. No merge to `main` or deployment was performed.
 
 ## Integration architecture
 1. Register and review an authoritative source in the source registry.
@@ -24,9 +24,9 @@ Refer to the milestone-specific documents for exact commands and schemas. Extrac
 |---|---|---|
 | Milestone branches and files present | Reviewed | Branch comparison confirms the phase 9 branch contains the earlier milestone files. |
 | Portal and usage documentation | Present | Static local browser portal; no hosted deployment. |
-| Security changes | Committed, not fully tested | See `docs/security-and-legal-safeguards.md`. |
-| Full automated test suite | Not verified | ATL Sandbox command remained running; no completed result was returned. |
-| GitHub Actions | Not verified | No workflow run or status check was returned for the reviewed commit. |
+| Security changes | Partially verified | Phase 12 transaction journal and single-writer lock are implemented and covered by CI; TOCTOU and retrieval-index resource limits remain open. See `docs/security-and-legal-safeguards.md`. |
+| Full automated test suite | CI passed for current integration commit | GitHub Actions run #64 completed successfully on merge commit `0ee257abdc84211df1b174232c4116b9924897df`; inspect the workflow job logs for the executed test steps. |
+| GitHub Actions | Passed | [Run #64](https://github.com/JennyJoshua/png-legal-library/actions/runs/42967376713) completed with conclusion `success` on 2026-11-11. |
 | Actual PNG legal corpus | Not ready | No verified, complete corpus of authoritative PNG Acts, amendments, subsidiary legislation or case law has been ingested and reviewed. |
 | Legal currency / amendment validation | Not ready | No automatic legal status determination; human legal review remains essential. |
 | Public hosting / production | Not performed | Local portal only. No hosting provider, API, paid service or production deployment was authorised. |
@@ -60,6 +60,41 @@ This system is a legal research and document-navigation aid. It is not a law fir
 
 ## Verification update — 2026-11-11
 
-The transaction-safe intake replacement PR (#15) completed GitHub Actions run [42966224418](https://github.com/JennyJoshua/png-legal-library/actions/runs/42966224418) successfully on commit `9238e17b804ebd9f6838fd1be02096e91d78193f`. The workflow completed the full discovered Python unittest suite and legal-register validation. This is evidence for that PR commit only; the follow-up single-writer lock and documentation changes require their own successful CI run before integration.
+PR #16, “P12-D: transaction-safe intake and single-writer hardening”, was merged into `phase10/legal-corpus-foundation` as commit `0ee257abdc84211df1b174232c4116b9924897df`. The post-merge GitHub Actions workflow [run #64](https://github.com/JennyJoshua/png-legal-library/actions/runs/42967376713) completed successfully (run ID `42967376713`). It is the current branch's latest recorded validation evidence.
 
-The legal-corpus, legal-currentness, end-to-end authoritative-document review, and production-hosting gates remain open. A passing software workflow does not establish that any PNG legal instrument is authentic, current, in force, complete, or licensed for redistribution.
+The run verifies the automated software checks configured in the repository at that commit. It does not establish legal authenticity, currentness, commencement, completeness, legal effect, or redistribution permission for any legal instrument.
+
+## Integration review — 2026-11-11
+
+### Branch and integration position
+
+- Current integration branch: `phase10/legal-corpus-foundation`.
+- Current reviewed commit: `0ee257abdc84211df1b174232c4116b9924897df`.
+- GitHub comparison: the integration branch is 100 commits ahead of `main`; `main` is not ahead of the integration branch.
+- This review did not modify `main`, merge the integration branch into `main`, or deploy the application.
+- The age and size of the branch difference require a deliberate integration review; commit count alone is not a quality or release-readiness measure.
+
+### Legal corpus and review queue
+
+At this review, the repository's legal-resource review queue contains 39 candidates, all marked `needs_more_evidence`. The document register contains one document record; the document-version register and legal-resources catalogue contain no entries. The registered Constitution record has not been established as a verified, versioned source document in the corpus.
+
+The repository therefore has a software and research foundation, not yet a populated, verified PNG legal corpus. No claim of complete national legislation, current law, or authoritative case-law coverage is justified.
+
+### Outstanding technical risks
+
+1. File time-of-check/time-of-use (TOCTOU) race conditions remain to be reviewed and tested.
+2. Retrieval-index size, record-count, and resource-consumption limits need explicit bounds and tests.
+3. Hosted access still lacks an approved authentication, privacy, backup, and operational security design.
+4. A clean end-to-end test using a lawfully obtained authoritative document, exact source version, page/section references, extraction, indexing, retrieval, and citations remains outstanding.
+
+### Research PR reconciliation
+
+- PR #2 (Parliament and OLC source discovery) contains two research-only deliverables. It records unresolved normal-browser checks, no verified document samples for key Parliament listings, and restrictive Parliament website reuse terms. These links are discovery leads, not proof of authoritative law or permission to redistribute source documents.
+- PR #3 (National Gazette source discovery) contains two research-only deliverables. It identifies PacLII and PNGi Portal as third-party discovery sources and NICTA as a narrow official register. It does not establish completeness or redistribution permission. The 1985 PacLII sample reference has an unresolved identifier discrepancy: the referenced `1985/68.pdf` is described as showing Gazette No. G69. This must be checked against the source issue index and original PDF before relying on the identifier.
+- Both research assignments were accessed on 2026-11-03. They require fresh human/browser verification before any source registry promotion or document ingestion.
+
+### Current release decision
+
+**Not ready for merge to `main` or public production.** Continue on the integration branch and feature branches. First reconcile the research-only deliverables and close the technical hardening gaps; then complete a bounded legal-document pilot with competent human review and explicit reuse-permission checks.
+
+A successful CI run verifies configured software checks only. It is not legal validation, and it does not replace source-by-source human review.
