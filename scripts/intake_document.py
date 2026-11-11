@@ -9,6 +9,7 @@ import argparse
 import hashlib
 import json
 import mimetypes
+import os
 import re
 import shutil
 import sys
@@ -21,6 +22,7 @@ ROOT = Path(__file__).resolve().parent.parent
 REGISTER = ROOT / "data" / "documents.json"
 HISTORY = ROOT / "data" / "document-versions.json"
 TRANSACTION_JOURNAL = ROOT / "data" / ".intake-transaction.json"
+INTAKE_LOCK = ROOT / "data" / ".intake.lock"
 SOURCE_REGISTRY = ROOT / "sources" / "discovery-sources.yml"
 MAX_FILE_BYTES = 100 * 1024 * 1024
 ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
@@ -99,6 +101,38 @@ def parse_args(argv=None):
 
 
 def intake(args):
+    """Run one intake at a time; fail closed if another process owns the lock."""
+    token = uuid4().hex
+    try:
+        lock_fd = os.open(str(INTAKE_LOCK), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+    except FileExistsError as exc:
+        raise ValueError(
+            "Another intake is running or a previous intake left a lock. "
+            "Confirm no intake process is active before removing data/.intake.lock."
+        ) from exc
+
+    try:
+        with os.fdopen(lock_fd, "w", encoding="utf-8") as lock_file:
+            json.dump({
+                "token": token,
+                "pid": os.getpid(),
+                "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            }, lock_file)
+            lock_file.flush()
+            os.fsync(lock_file.fileno())
+        return _intake_without_lock(args)
+    finally:
+        # Remove only the lock created by this process. Abrupt termination
+        # leaves it in place for deliberate operator recovery.
+        try:
+            lock_data = load_json(INTAKE_LOCK)
+            if isinstance(lock_data, dict) and lock_data.get("token") == token:
+                INTAKE_LOCK.unlink()
+        except (FileNotFoundError, OSError, ValueError):
+            pass
+
+
+def _intake_without_lock(args):
     # Recover a prior interrupted write before reading either register.
     recover_pending_transaction()
 

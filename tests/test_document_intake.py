@@ -21,6 +21,7 @@ class DocumentIntakeTests(unittest.TestCase):
         self.history_path = self.base / "versions.json"
         self.sources_path = self.base / "sources.yml"
         self.journal_path = self.base / ".intake-transaction.json"
+        self.lock_path = self.base / ".intake.lock"
         self.register_path.write_text(json.dumps({"schema_version": 1, "jurisdiction": "Papua New Guinea", "documents": []}))
         self.history_path.write_text(json.dumps({"history_version": "1.0", "jurisdiction": "Papua New Guinea", "versions": []}))
         self.sources_path.write_text("sources:\n  - source_id: png_parliament\n    url: https://parliament.gov.pg/\n")
@@ -32,6 +33,7 @@ class DocumentIntakeTests(unittest.TestCase):
             patch.object(intake, "HISTORY", self.history_path),
             patch.object(intake, "SOURCE_REGISTRY", self.sources_path),
             patch.object(intake, "TRANSACTION_JOURNAL", self.journal_path),
+            patch.object(intake, "INTAKE_LOCK", self.lock_path),
         ]
         for item in self.patches: item.start()
 
@@ -50,6 +52,23 @@ class DocumentIntakeTests(unittest.TestCase):
 
     def load(self, path):
         return json.loads(path.read_text())
+
+    def test_existing_intake_lock_blocks_second_writer_without_mutation(self):
+        self.lock_path.write_text(json.dumps({
+            "token": "another-process",
+            "pid": 12345,
+            "created_at": "2026-11-11T00:00:00+00:00"
+        }))
+        with self.assertRaisesRegex(ValueError, "Another intake is running"):
+            intake.intake(self.args())
+        self.assertEqual(self.load(self.register_path)["documents"], [])
+        self.assertEqual(self.load(self.history_path)["versions"], [])
+        self.assertTrue(self.lock_path.exists())
+
+    def test_intake_releases_its_lock_after_success(self):
+        result = intake.intake(self.args())
+        self.assertEqual(result["result"], "recorded")
+        self.assertFalse(self.lock_path.exists())
 
     def test_new_intake_creates_pending_record_and_checksum(self):
         result = intake.intake(self.args())

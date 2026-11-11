@@ -56,3 +56,10 @@ Record the actual test output and GitHub Actions result before changing this rep
 
 ## Intended product boundary
 This system is a legal research and document-navigation aid. It is not a law firm, legal practitioner, court database, or source of legal advice. It must not present generated text as authoritative law or claim that an instrument is current unless a competent reviewer has verified the relevant authoritative records.
+
+
+## Verification update — 2026-11-11
+
+The transaction-safe intake replacement PR (#15) completed GitHub Actions run [42966224418](https://github.com/JennyJoshua/png-legal-library/actions/runs/42966224418) successfully on commit `9238e17b804ebd9f6838fd1be02096e91d78193f`. The workflow completed the full discovered Python unittest suite and legal-register validation. This is evidence for that PR commit only; the follow-up single-writer lock and documentation changes require their own successful CI run before integration.
+
+The legal-corpus, legal-currentness, end-to-end authoritative-document review, and production-hosting gates remain open. A passing software workflow does not establish that any PNG legal instrument is authentic, current, in force, complete, or licensed for redistribution.

@@ -15,3 +15,5 @@ __pycache__/
 # Recovery journal for an interrupted local intake transaction.
 data/.intake-transaction.json
 data/.intake-transaction.json.tmp
+
+data/.intake.lock
