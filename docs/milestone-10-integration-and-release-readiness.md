@@ -98,3 +98,26 @@ The repository therefore has a software and research foundation, not yet a popul
 **Not ready for merge to `main` or public production.** Continue on the integration branch and feature branches. First reconcile the research-only deliverables and close the technical hardening gaps; then complete a bounded legal-document pilot with competent human review and explicit reuse-permission checks.
 
 A successful CI run verifies configured software checks only. It is not legal validation, and it does not replace source-by-source human review.
+
+
+## Verification update — 2026-11-12
+
+### Phase 11 technical hardening
+
+PR #20, "Security: harden local intake and bound retrieval index resources", was merged into `phase10/legal-corpus-foundation` as commit `a6ef65a12c731d126c396770a8a8630c70879aee`. Its pull-request validation run #68 passed on head commit `84f0d8c8abea4d3082b7a2f64292343709a7702c`.
+
+The merged changes address the specific intake TOCTOU and retrieval-index resource-limit risks described earlier in this report. They add no legal corpus content. The run verifies configured software checks only; it does not establish legal authenticity, currentness, commencement, completeness, legal effect, or reuse rights.
+
+### Authoritative-document pilot preflight
+
+The first candidate is **Constitutional Amendment No. 41 (Motions of No Confidence) Law 2013**, hosted as a PDF on the National Parliament website. The PDF text identifies the instrument as made by Parliament and contains Clerk fair-print and Speaker section 14 certification material.
+
+The previously registered consolidated Constitution PDF is not suitable as the first current-law pilot: the Parliament-hosted copy's amendment appendix ends at No. 22, and the Ombudsman-hosted copy is an older 2018 upload. Amendments Nos. 48 and 49 were passed in March 2025, so those copies cannot be treated as a current consolidated Constitution.
+
+The No. 41 instrument is a discrete historical amendment. Its current legal effect must not be inferred from the 2013 instrument alone. Its record must remain pending human review with legal status unknown. PNG Copyright and Neighbouring Rights Act 2000, section 5(b), is relevant to the reuse assessment for official legislative text, but the repository has not made a final permission determination; redistribution permission remains unknown.
+
+**The end-to-end pilot has not yet run.** A byte-for-byte downloadable PDF has not been obtained in the working environment, so there is no checksum, version record, extraction output, index, or retrieval result. The exact official PDF must be obtained before claiming pilot completion. The preflight plan is recorded in `docs/authoritative-document-pilot-preflight.md`.
+
+### Current decision
+
+The software foundation has progressed, but the PNG legal corpus and legal release gates remain **not ready**. Do not merge the Phase 10 integration branch into `main`, deploy publicly, or present any unverified document as current law.
