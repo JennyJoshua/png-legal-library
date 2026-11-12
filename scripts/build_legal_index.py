@@ -5,6 +5,8 @@ from pathlib import Path
 from segment_legal_text import segment_text
 
 ROOT = Path(__file__).resolve().parent.parent
+MAX_INDEX_BYTES = 50 * 1024 * 1024
+MAX_INDEX_RECORDS = 100_000
 
 def build(input_dir, output_dir):
     records = []
@@ -26,6 +28,8 @@ def build(input_dir, output_dir):
                 node.update({"document_title": data.get("document_title") or data["document_id"],
                              "source_url": data.get("source_url"), "source_id": data.get("source_id"),
                              "source_checksum_sha256": data["source_checksum_sha256"], "format": data.get("format")})
+            if len(records) + len(nodes) > MAX_INDEX_RECORDS:
+                raise ValueError(f"Index exceeds the configured {MAX_INDEX_RECORDS}-record limit")
             records.extend(nodes)
     output = Path(output_dir)
     output.mkdir(parents=True, exist_ok=True)
@@ -34,7 +38,10 @@ def build(input_dir, output_dir):
               "record_count": len(records), "records": records,
               "warning": "Local research aid only. Verify every passage and citation against the original authoritative document and confirm its current legal status."}
     target = output / "index.json"
-    target.write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    serialized = json.dumps(result, indent=2, ensure_ascii=False) + "\n"
+    if len(serialized.encode("utf-8")) > MAX_INDEX_BYTES:
+        raise ValueError(f"Index exceeds the configured {MAX_INDEX_BYTES}-byte limit")
+    target.write_text(serialized, encoding="utf-8")
     return {"indexed_records": len(records), "index_file": str(target)}
 
 def main(argv=None):
