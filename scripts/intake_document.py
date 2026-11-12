@@ -11,7 +11,7 @@ import json
 import mimetypes
 import os
 import re
-import shutil
+import stat
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -73,12 +73,83 @@ def commit_registers_transactionally(register, history):
     recover_pending_transaction()
 
 
+def open_regular_file_no_follow(path):
+    """Open one regular file without following a final-component symlink."""
+    no_follow = getattr(os, "O_NOFOLLOW", None)
+    if no_follow is None:
+        raise ValueError("This platform does not support O_NOFOLLOW; refusing unsafe file intake.")
+    fd = os.open(os.fspath(path), os.O_RDONLY | no_follow)
+    try:
+        info = os.fstat(fd)
+        if not stat.S_ISREG(info.st_mode):
+            raise ValueError("Input and archive paths must resolve to regular files.")
+        return fd, info
+    except Exception:
+        os.close(fd)
+        raise
+
+
+def _same_file_snapshot(before, after):
+    return (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns, before.st_ctime_ns) == (
+        after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns
+    )
+
+
 def sha256_file(path):
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+    fd, before = open_regular_file_no_follow(path)
+    try:
+        digest = hashlib.sha256()
+        while True:
+            chunk = os.read(fd, 1024 * 1024)
+            if not chunk:
+                break
             digest.update(chunk)
-    return digest.hexdigest()
+        if not _same_file_snapshot(before, os.fstat(fd)):
+            raise ValueError("File changed while it was being checked; retry intake.")
+        return digest.hexdigest()
+    finally:
+        os.close(fd)
+
+
+def copy_file_verified(source, destination, expected_checksum, expected_size):
+    """Copy from a no-follow descriptor and publish only a verified snapshot."""
+    source_fd, before = open_regular_file_no_follow(source)
+    temporary = destination.with_name(destination.name + "." + uuid4().hex + ".tmp")
+    target_fd = None
+    try:
+        if before.st_size != expected_size:
+            raise ValueError("Source file changed before archive copy; retry intake.")
+        target_fd = os.open(str(temporary), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        digest = hashlib.sha256()
+        copied = 0
+        while True:
+            chunk = os.read(source_fd, 1024 * 1024)
+            if not chunk:
+                break
+            copied += len(chunk)
+            if copied > expected_size:
+                raise ValueError("Source file grew during archive copy; retry intake.")
+            digest.update(chunk)
+            view = memoryview(chunk)
+            while view:
+                written = os.write(target_fd, view)
+                view = view[written:]
+        if not _same_file_snapshot(before, os.fstat(source_fd)) or copied != expected_size:
+            raise ValueError("Source file changed during archive copy; retry intake.")
+        if digest.hexdigest() != expected_checksum:
+            raise ValueError("Archived copy checksum does not match the inspected source file.")
+        os.fsync(target_fd)
+        os.close(target_fd)
+        target_fd = None
+        os.replace(temporary, destination)
+    finally:
+        os.close(source_fd)
+        if target_fd is not None:
+            os.close(target_fd)
+        try:
+            temporary.unlink()
+        except FileNotFoundError:
+            pass
 
 
 def parse_args(argv=None):
@@ -160,16 +231,28 @@ def _intake_without_lock(args):
         raise ValueError("source-url must use the exact registered HTTPS host and remain within its registered path.")
 
     supplied = Path(args.file).expanduser()
-    if not supplied.is_file() or supplied.is_symlink():
-        raise ValueError("file must be an existing regular local file, not a symlink.")
-    supplied = supplied.resolve()
-    size = supplied.stat().st_size
-    if size < 1:
-        raise ValueError("Empty files cannot be registered.")
-    limit = min(max(args.max_file_mb, 1), 100) * 1024 * 1024
-    if size > limit:
-        raise ValueError(f"File exceeds the configured maximum ({limit // (1024*1024)} MB).")
-    checksum = sha256_file(supplied)
+    try:
+        source_fd, source_info = open_regular_file_no_follow(supplied)
+    except (OSError, ValueError) as exc:
+        raise ValueError("file must be an existing regular local file and must not be a symlink.") from exc
+    try:
+        size = source_info.st_size
+        if size < 1:
+            raise ValueError("Empty files cannot be registered.")
+        limit = min(max(args.max_file_mb, 1), 100) * 1024 * 1024
+        if size > limit:
+            raise ValueError(f"File exceeds the configured maximum ({limit // (1024*1024)} MB).")
+        digest = hashlib.sha256()
+        while True:
+            chunk = os.read(source_fd, 1024 * 1024)
+            if not chunk:
+                break
+            digest.update(chunk)
+        if not _same_file_snapshot(source_info, os.fstat(source_fd)):
+            raise ValueError("File changed while it was being checked; retry intake.")
+        checksum = digest.hexdigest()
+    finally:
+        os.close(source_fd)
 
     register = load_json(REGISTER)
     history = load_json(HISTORY)
@@ -225,17 +308,9 @@ def _intake_without_lock(args):
         if destination.exists() and sha256_file(destination) != checksum:
             raise ValueError("Archive destination already exists with a different checksum.")
         if not destination.exists():
-            # Stage beside the final content-addressed path and publish only
-            # after checksum verification; crashes cannot expose partial files.
-            temporary_destination = destination.with_name(destination.name + ".tmp")
-            try:
-                shutil.copyfile(supplied, temporary_destination)
-                if sha256_file(temporary_destination) != checksum:
-                    raise ValueError("Archived copy checksum does not match the supplied file.")
-                temporary_destination.replace(destination)
-            finally:
-                if temporary_destination.exists():
-                    temporary_destination.unlink()
+            # Reopen without following symlinks, copy from that descriptor,
+            # and verify file identity stability and the original digest.
+            copy_file_verified(supplied, destination, checksum, size)
         archived_path = relative.as_posix()
 
     if existing is None:

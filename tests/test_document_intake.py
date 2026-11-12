@@ -109,10 +109,11 @@ class DocumentIntakeTests(unittest.TestCase):
 
     def test_interrupted_archive_copy_never_leaves_partial_final_file(self):
         archive = self.base / ".private" / "legal-documents" / "sample-act"
-        def fail_after_partial_copy(source, destination):
-            Path(destination).write_bytes(b"partial")
+        original_write = intake.os.write
+        def fail_after_partial_write(fd, data):
+            original_write(fd, data[:4])
             raise OSError("simulated interruption during archive copy")
-        with patch.object(intake.shutil, "copyfile", side_effect=fail_after_partial_copy):
+        with patch.object(intake.os, "write", side_effect=fail_after_partial_write):
             with self.assertRaisesRegex(OSError, "simulated interruption"):
                 intake.intake(self.args("permitted"))
         self.assertEqual(list(archive.iterdir()), [])

@@ -1,12 +1,14 @@
 import json
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 from retrieve_legal_evidence import retrieve
+import retrieve_legal_evidence as retrieval_module
 
 class EvidenceRetrievalTests(unittest.TestCase):
     def setUp(self):
@@ -64,6 +66,28 @@ class EvidenceRetrievalTests(unittest.TestCase):
     def test_limit_validation(self):
         with self.assertRaisesRegex(ValueError, "limit"):
             retrieve(self.index, "court", limit=101)
+
+    def test_index_byte_limit_is_enforced_before_json_parse(self):
+        self.index.write_bytes(b" " * 33)
+        with patch.object(retrieval_module, "MAX_INDEX_BYTES", 32):
+            with self.assertRaisesRegex(ValueError, "byte limit"):
+                retrieve(self.index, "court")
+
+    def test_index_record_count_limit_is_enforced(self):
+        self.write([self.record, self.record])
+        with patch.object(retrieval_module, "MAX_INDEX_RECORDS", 1):
+            with self.assertRaisesRegex(ValueError, "record limit"):
+                retrieve(self.index, "court")
+
+    def test_non_object_index_root_is_rejected(self):
+        self.index.write_text("[]", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "root"):
+            retrieve(self.index, "court")
+
+    def test_malformed_json_is_reported_as_invalid_index(self):
+        self.index.write_text("{not-json", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "valid UTF-8 JSON"):
+            retrieve(self.index, "court")
 
     def test_repeatable_citation_id(self):
         first = retrieve(self.index, "court")["results"][0]["citation_id"]

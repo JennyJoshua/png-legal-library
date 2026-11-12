@@ -10,6 +10,8 @@ from pathlib import Path
 TOKEN = re.compile(r"[a-z0-9]+")
 CHECKSUM = re.compile(r"^[a-f0-9]{64}$")
 ROOT = Path(__file__).resolve().parent.parent
+MAX_INDEX_BYTES = 50 * 1024 * 1024
+MAX_INDEX_RECORDS = 100_000
 
 
 def _terms(value):
@@ -48,10 +50,21 @@ def retrieve(index_path, query, match="all", limit=10):
         raise ValueError("match must be 'all' or 'any'")
     if not 1 <= limit <= 100:
         raise ValueError("limit must be between 1 and 100")
-    data = json.loads(Path(index_path).read_text(encoding="utf-8"))
+    with Path(index_path).open("rb") as handle:
+        raw = handle.read(MAX_INDEX_BYTES + 1)
+    if len(raw) > MAX_INDEX_BYTES:
+        raise ValueError(f"Index exceeds the configured {MAX_INDEX_BYTES}-byte limit.")
+    try:
+        data = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError("Index must be valid UTF-8 JSON.") from exc
+    if not isinstance(data, dict):
+        raise ValueError("Index root must be a JSON object.")
     records = data.get("records")
     if not isinstance(records, list):
         raise ValueError("Index records must be an array")
+    if len(records) > MAX_INDEX_RECORDS:
+        raise ValueError(f"Index exceeds the configured {MAX_INDEX_RECORDS}-record limit.")
     results, rejected = [], 0
     for record in records:
         if not isinstance(record, dict):
