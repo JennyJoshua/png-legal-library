@@ -8,6 +8,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 from retrieve_legal_evidence import retrieve
+import retrieve_legal_evidence as retrieval_module
 
 class EvidenceRetrievalTests(unittest.TestCase):
     def setUp(self):
